@@ -13,4 +13,4 @@ Output           = logs/condor_$(Process).out
 Error            = logs/condor_$(Process).err
 +MaxRuntime =1800
 
-Queue 200
+Queue 1
