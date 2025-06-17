@@ -54,7 +54,7 @@ int evolution_jet_bins(int idx)
     // 打开 ROOT 文件
     // TString inputName = "../pp_parton_cascade_0.root";
     //TString inputName = Form("/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_%d.root", idx * 200);
-    TString inputName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/pp_parton_cascade_%d.root", idx * 200);
+    TString inputName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/pp_parton_cascade_%d.root", idx);
     TFile *file = TFile::Open(inputName);
     if (!file || file->IsZombie())
     {
