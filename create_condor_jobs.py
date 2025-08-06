@@ -17,7 +17,7 @@ def create_condor_submission(filename_list, output_sub_file="condor_parton_v2.su
         f.write("Executable      = exec.sh\n\n")
         
         f.write("Should_Transfer_Files = YES\n")
-        f.write("Transfer_Input_Files  = parton_v2.C, binning.h, coordinateTools.h\n\n")
+        f.write("Transfer_Input_Files  = parton_v2.C, binning.h, coordinateTools.h, trackTree.h, trackTree.C\n\n")
         
         #f.write("# Transfer output files back\n")
         #f.write("Transfer_Output_Files = parton_v2_output_$(Process).root\n\n")
