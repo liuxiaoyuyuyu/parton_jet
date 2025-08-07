@@ -393,7 +393,7 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
     baseFileName.ReplaceAll("/", "_");
     baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_huangxi_PC_", "");
     
-    TString outputFileName = Form("parton_v2_output_%s.root", baseFileName.Data());
+    TString outputFileName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/parton_v2_output_%s.root", baseFileName.Data());
     TFile* outFile = TFile::Open(outputFileName, "RECREATE");
     
     // Write histograms
