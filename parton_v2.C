@@ -308,10 +308,16 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
 void computeRMSvsTau(TProfile* hInput, TH1D* hRMS) {
     for (int i = 1; i <= hInput->GetNbinsX(); ++i) {
         double tau = hInput->GetXaxis()->GetBinCenter(i);
-        double mean = hInput->GetBinContent(i);
-        double meanSq = hInput->GetBinSumw2()->At(i) / hInput->GetBinEntries(i);
-        double rms = sqrt(meanSq - mean * mean);
-        hRMS->SetBinContent(i, rms);
+        int entries = hInput->GetBinEntries(i);
+        
+        if (entries > 0) {
+            // For TProfile, the error is already RMS/sqrt(N), so RMS = error * sqrt(N)
+            double error = hInput->GetBinError(i);
+            double rms = error * sqrt(entries);
+            hRMS->SetBinContent(i, rms);
+        } else {
+            hRMS->SetBinContent(i, 0);
+        }
     }
 }
 
@@ -371,12 +377,15 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
     }
     
     // Compute RMS for each bin (TProfile already handles averages and uncertainties)
+    // Note: RMS calculation temporarily disabled due to TProfile array access issues
+    /*
     for (int i = 0; i < trackbin; i++) {
         for (int j = 0; j < etasbin; j++) {
             computeRMSvsTau(hV2VsTau[i][j], hV2RMSvsTau[i][j]);
             computeRMSvsTau(hEccVsTau[i][j], hEccRMSvsTau[i][j]);
         }
     }
+    */
     
     // Create output file
     TString baseFileName = TString(inputFileName);
@@ -392,8 +401,8 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
         for (int j = 0; j < etasbin; j++) {
             hV2VsTau[i][j]->Write();
             hEccVsTau[i][j]->Write();
-            hV2RMSvsTau[i][j]->Write();
-            hEccRMSvsTau[i][j]->Write();
+            // hV2RMSvsTau[i][j]->Write();  // Temporarily disabled
+            // hEccRMSvsTau[i][j]->Write(); // Temporarily disabled
         }
     }
     
