@@ -210,7 +210,7 @@ void matchPartonsToJets(vector<Parton>& partons, const vector<Jet>& jets) {
             double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
             double dEta = p.eta - jets[j].Eta;
             double dR   = sqrt(dEta * dEta + dphi * dphi);
-            
+            cout << "  Parton " << p.pdgid << " distance to jet " << j << ", dR = " << dR << endl;
             if (dR < 0.8) {
                 p.jetID = j;
                 break;
