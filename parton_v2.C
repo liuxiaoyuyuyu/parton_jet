@@ -132,8 +132,7 @@ void readJets(TTree* tree, vector<Jet>& jets) {
     tree->SetBranchAddress("genJetPhi", &b_genJetPhi);
     tree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
     
-    // Get the current entry
-    tree->GetEntry(tree->GetReadEntry());
+    cout << "    Reading jets: " << b_genJetPt->size() << " jets found" << endl;
     
     for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
         Jet jet;
@@ -170,8 +169,7 @@ void readPartons(TTree* tree, vector<Parton>& partons) {
     tree->SetBranchAddress("par_z", &b_par_z);
     tree->SetBranchAddress("par_t", &b_par_t);
     
-    // Get the current entry
-    tree->GetEntry(tree->GetReadEntry());
+    cout << "    Reading partons: " << b_par_pdgid->size() << " partons found" << endl;
     
     for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
         Parton p;
@@ -205,19 +203,20 @@ void readPartons(TTree* tree, vector<Parton>& partons) {
 
 // Match Partons to Jets, match parton to the first jet that is within 0.8 of the parton's eta and phi.
 void matchPartonsToJets(vector<Parton>& partons, const vector<Jet>& jets) {
-    cout << "h1"<<endl;
+    int matched = 0;
     for (auto& p : partons) {
         for (int j = 0; j < (int)jets.size(); ++j) {
             double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
             double dEta = p.eta - jets[j].Eta;
             double dR   = sqrt(dEta * dEta + dphi * dphi);
-            cout << "  Parton " << p.pdgid << " distance to jet " << j << ", dR = " << dR << endl;
             if (dR < 0.8) {
                 p.jetID = j;
+                matched++;
                 break;
             }
         }
     }
+    cout << "    Matched " << matched << " partons to jets" << endl;
 }
 
 // Coordinate Transformation from Lab to Jet Frame
@@ -460,6 +459,8 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     //for (int ientry = 0; ientry < nentries; ientry++) {
     for (int ientry = 0; ientry < 10; ientry++) {
         cout << "Processing event " << ientry << "/10" << endl;
+        
+        // Get the current entry once
         inTree->GetEntry(ientry);
         
         readJets(inTree, jets);
