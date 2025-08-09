@@ -205,6 +205,7 @@ void readPartons(TTree* tree, vector<Parton>& partons) {
 
 // Match Partons to Jets, match parton to the first jet that is within 0.8 of the parton's eta and phi.
 void matchPartonsToJets(vector<Parton>& partons, const vector<Jet>& jets) {
+    cout << "h1"<<endl;
     for (auto& p : partons) {
         for (int j = 0; j < (int)jets.size(); ++j) {
             double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
