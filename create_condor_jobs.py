@@ -27,10 +27,13 @@ def create_condor_submission(filename_list, output_sub_file="condor_parton_v2.su
         f.write("Error            = logs/condor_parton_v2_$(Process).err\n")
         f.write("+MaxRuntime = 3600\n\n")
         
-        # Write individual job entries
+        # Write arguments for each job using the modern format
         for i, filename in enumerate(filename_list):
-            f.write(f"Arguments = \"{filename}\"\n")
-            f.write(f"Queue 1\n\n")
+            f.write(f"Arguments_{i} = \"{filename}\"\n")
+        
+        # Use a single Queue statement with the Arguments macro
+        f.write("Arguments = $(Arguments_$(Process))\n")
+        f.write(f"Queue {len(filename_list)}\n\n")
     
     print(f"Created condor submission file: {output_sub_file}")
     print(f"Total jobs: {len(filename_list)}")

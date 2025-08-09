@@ -456,7 +456,8 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     std::map<int, vector<int>> partonsByJet;
     
     // Event loop
-    for (int ientry = 0; ientry < nentries; ientry++) {
+    //for (int ientry = 0; ientry < nentries; ientry++) {
+    for (int ientry = 0; ientry < 10; ientry++) {
         inTree->GetEntry(ientry);
         
         readJets(inTree, jets);
