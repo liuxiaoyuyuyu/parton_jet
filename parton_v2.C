@@ -18,14 +18,17 @@
 
 using namespace std;
 
-const double maxTime = 3;
+const double maxTime = 10;
 const int nTimeBins = 100;
+const double tauForv2vsEcc = 3.0; // tau value for v2 vs eccentricity correlation plot
 
 // Global histograms for binned analysis
 TProfile* hv2VsTau[trackbin][etasbin];       // Average v2 vs tau with uncertainties
 TProfile* hEccVsTau[trackbin][etasbin];      // Average eccentricity vs tau with uncertainties
+
 TH1D* hv2RMSvsTau[trackbin][etasbin];        // RMS v2 vs tau
 TH1D* hEccRMSvsTau[trackbin][etasbin];       // RMS eccentricity vs tau
+TH2D* hv2vsEcc[trackbin][etasbin];           // v2 vs eccentricity correlation at tau=3fm/c
 
 // QA plots
 TH2D* hNpartonVsJetMult;  // Nparton vs jet charged multiplicity
@@ -81,6 +84,12 @@ void initializeHistograms() {
             title = Form("Psi2 Distribution vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #Psi_{2}; Counts", 
                         trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
             hPsi2_binned[i][j] = new TH2D(name, title, nTimeBins, 0, maxTime, 100, -TMath::Pi()/2, TMath::Pi()/2);
+            
+            // v2 vs eccentricity correlation plot at specific tau
+            name = Form("hv2vsEcc_Nch%d_etas%d", i, j);
+            title = Form("v2 vs Eccentricity at #tau=%.1f fm/c (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #varepsilon_{2}; v2", 
+                        tauForV2vsEcc, trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hv2vsEcc[i][j] = new TH2D(name, title, 50, 0, 1, 50, -1, 1);
         }
     }
 }
@@ -372,16 +381,27 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 double psi2 = 0.5 * atan2(Im, Re);
                 hEccVsTau[multBin][etaBin]->Fill(tauTarget, ecc); 
                 
-                // Fill TProfile directly per parton and QA plots in one loop
+                // Calculate v2 by averaging over partons in this jet first, then average over jets
+                double sumv2 = 0;
+                int nPartonsForv2 = 0;
                 for (int idx : etaPartons) {
                     const auto& P = partons[idx];
                     if (P.tau >= tauTarget) continue;
                     
                     double phi_mom = atan2(P.jet_par_py, P.jet_par_px);
                     double v2 = cos(2 * (phi_mom - psi2));
+                    sumv2 += v2;
+                    nPartonsForv2++;
+                }
+                
+                if (nPartonsForv2 > 0) {
+                    double avgv2 = sumv2 / nPartonsForv2; // Average over partons in this jet
+                    hv2VsTau[multBin][etaBin]->Fill(tauTarget, avgv2); // Average over jets
                     
-                    // Fill TProfile directly - it will average over all partons in all jets
-                    hv2VsTau[multBin][etaBin]->Fill(tauTarget, v2);
+                    // Fill v2 vs eccentricity correlation at specific tau
+                    if (fabs(tauTarget - tauForv2vsEcc) < maxTime/nTimeBins/2) { // Check if we're at the target tau bin
+                        hv2vsEcc[multBin][etaBin]->Fill(ecc, avgv2);
+                    }
                 }
                 
                 // Fill binned QA plots
@@ -501,6 +521,7 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
             hNpartonVsJetMult_binned[i][j]->Write();
             hNpartonVsTau_binned[i][j]->Write();
             hPsi2_binned[i][j]->Write();
+            hv2vsEcc[i][j]->Write();
         }
     }
     
