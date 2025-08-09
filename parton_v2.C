@@ -458,10 +458,13 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     // Event loop
     //for (int ientry = 0; ientry < nentries; ientry++) {
     for (int ientry = 0; ientry < 10; ientry++) {
+        cout << "Processing event " << ientry << "/10" << endl;
         inTree->GetEntry(ientry);
         
         readJets(inTree, jets);
         readPartons(inTree, partons);
+        
+        cout << "  Event " << ientry << ": " << jets.size() << " jets, " << partons.size() << " partons" << endl;
         
         matchPartonsToJets(partons, jets);
         transformToJetFrame(partons, jets);
@@ -482,6 +485,7 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         }
         
         // Fill binned observables
+        cout << "  Filling observables for " << partonsByJet.size() << " jets" << endl;
         fillBinnedObservables(partonsByJet, partons, jets);
     }
     
