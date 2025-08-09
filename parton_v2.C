@@ -117,113 +117,7 @@ struct Jet {
     int   genJetChargedMultiplicity;
 };
 
-// Read and store jets
-void readJets(TTree* tree, vector<Jet>& jets) {
-    jets.clear();
-    
-    // Set up branch addresses for jet data
-    vector<float>* b_genJetPt = nullptr;
-    vector<float>* b_genJetEta = nullptr;
-    vector<float>* b_genJetPhi = nullptr;
-    vector<int>* b_genJetChargedMult = nullptr;
-    
-    // Check if branches exist
-    if (!tree->GetBranch("genJetPt")) {
-        cout << "    Error: Branch 'genJetPt' not found!" << endl;
-        return;
-    }
-    if (!tree->GetBranch("genJetEta")) {
-        cout << "    Error: Branch 'genJetEta' not found!" << endl;
-        return;
-    }
-    if (!tree->GetBranch("genJetPhi")) {
-        cout << "    Error: Branch 'genJetPhi' not found!" << endl;
-        return;
-    }
-    if (!tree->GetBranch("genJetChargedMultiplicity")) {
-        cout << "    Error: Branch 'genJetChargedMultiplicity' not found!" << endl;
-        return;
-    }
-    
-    tree->SetBranchAddress("genJetPt", &b_genJetPt);
-    tree->SetBranchAddress("genJetEta", &b_genJetEta);
-    tree->SetBranchAddress("genJetPhi", &b_genJetPhi);
-    tree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
-    
-    cout << "    Reading jets: " << b_genJetPt->size() << " jets found" << endl;
-    
-    for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
-        Jet jet;
-        jet.Pt = b_genJetPt->at(j);
-        jet.Eta = b_genJetEta->at(j);
-        jet.Phi = b_genJetPhi->at(j);
-        jet.genJetChargedMultiplicity = b_genJetChargedMult->at(j);
-        jets.push_back(jet);
-    }
-}
 
-// Read and store partons
-void readPartons(TTree* tree, vector<Parton>& partons) {
-    partons.clear();
-    
-    // Set up branch addresses for parton data
-    vector<int>* b_par_pdgid = nullptr;
-    vector<double>* b_par_px = nullptr;
-    vector<double>* b_par_py = nullptr;
-    vector<double>* b_par_pz = nullptr;
-    vector<double>* b_par_e = nullptr;
-    vector<double>* b_par_x = nullptr;
-    vector<double>* b_par_y = nullptr;
-    vector<double>* b_par_z = nullptr;
-    vector<double>* b_par_t = nullptr;
-    
-    tree->SetBranchAddress("par_pdgid", &b_par_pdgid);
-    tree->SetBranchAddress("par_px", &b_par_px);
-    tree->SetBranchAddress("par_py", &b_par_py);
-    tree->SetBranchAddress("par_pz", &b_par_pz);
-    tree->SetBranchAddress("par_e", &b_par_e);
-    tree->SetBranchAddress("par_x", &b_par_x);
-    tree->SetBranchAddress("par_y", &b_par_y);
-    tree->SetBranchAddress("par_z", &b_par_z);
-    tree->SetBranchAddress("par_t", &b_par_t);
-    
-    // Check if parton branches exist
-    if (!tree->GetBranch("par_pdgid")) {
-        cout << "    Error: Branch 'par_pdgid' not found!" << endl;
-        return;
-    }
-    
-    cout << "    Reading partons: " << b_par_pdgid->size() << " partons found" << endl;
-    
-    for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
-        Parton p;
-        p.pdgid = b_par_pdgid->at(j);
-        p.px    = b_par_px->at(j);
-        p.py    = b_par_py->at(j);
-        p.pz    = b_par_pz->at(j);
-        p.e     = b_par_e->at(j);
-        p.x     = b_par_x->at(j);
-        p.y     = b_par_y->at(j);
-        p.z     = b_par_z->at(j);
-        p.t     = b_par_t->at(j);
-        
-        // Calculate parton kinematics
-        p.pt   = sqrt(p.px * p.px + p.py * p.py);
-        p.phi  = atan2(p.py, p.px);
-        double theta = atan2(p.pt, p.pz);
-        p.eta  = -log(tan(theta / 2.0));
-        
-        p.jetID       = -1;
-        p.jet_par_x   = 0.0;
-        p.jet_par_y   = 0.0;
-        p.jet_par_z   = 0.0;
-        p.jet_par_px  = 0.0;
-        p.jet_par_py  = 0.0;
-        p.jet_par_pz  = 0.0;
-        
-        partons.push_back(p);
-    }
-}
 
 // Match Partons to Jets, match parton to the first jet that is within 0.8 of the parton's eta and phi.
 void matchPartonsToJets(vector<Parton>& partons, const vector<Jet>& jets) {
@@ -472,16 +366,45 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         return;
     }
     
-    // Debug: List all available branches
-    cout << "Available branches in trackTree:" << endl;
-    TObjArray* branches = inTree->GetListOfBranches();
-    for (int i = 0; i < branches->GetEntries(); i++) {
-        TBranch* branch = (TBranch*)branches->At(i);
-        cout << "  " << branch->GetName() << endl;
-    }
-    cout << endl;
+
     
     int nentries = inTree->GetEntries();
+    
+    //----------------------------------------------------------------------
+    // Set up branch addresses (like evolution_jet_bins.cc)
+    //----------------------------------------------------------------------
+    
+    // Parton branches
+    vector<int>*    b_par_pdgid = nullptr;
+    vector<double>* b_par_px    = nullptr;
+    vector<double>* b_par_py    = nullptr;
+    vector<double>* b_par_pz    = nullptr;
+    vector<double>* b_par_e     = nullptr;
+    vector<double>* b_par_x     = nullptr;
+    vector<double>* b_par_y     = nullptr;
+    vector<double>* b_par_z     = nullptr;
+    vector<double>* b_par_t     = nullptr;
+
+    inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
+    inTree->SetBranchAddress("par_px",    &b_par_px);
+    inTree->SetBranchAddress("par_py",    &b_par_py);
+    inTree->SetBranchAddress("par_pz",    &b_par_pz);
+    inTree->SetBranchAddress("par_e",     &b_par_e);
+    inTree->SetBranchAddress("par_x",     &b_par_x);
+    inTree->SetBranchAddress("par_y",     &b_par_y);
+    inTree->SetBranchAddress("par_z",     &b_par_z);
+    inTree->SetBranchAddress("par_t",     &b_par_t);
+
+    // Jet branches
+    vector<double>* b_genJetPt  = nullptr;
+    vector<double>* b_genJetEta = nullptr;
+    vector<double>* b_genJetPhi = nullptr;
+    vector<int>* b_genJetChargedMult = nullptr;
+
+    inTree->SetBranchAddress("genJetPt",  &b_genJetPt);
+    inTree->SetBranchAddress("genJetEta", &b_genJetEta);
+    inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
+    inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
     
     // Prepare containers
     vector<Parton> partons;
@@ -493,11 +416,50 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     for (int ientry = 0; ientry < 10; ientry++) {
         cout << "Processing event " << ientry << "/10" << endl;
         
-        // Get the current entry once
+        // Get the current entry (like evolution_jet_bins.cc)
         inTree->GetEntry(ientry);
         
-        readJets(inTree, jets);
-        readPartons(inTree, partons);
+        // Read jets (like evolution_jet_bins.cc)
+        jets.clear();
+        for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
+            Jet jet;
+            jet.Pt = b_genJetPt->at(j);
+            jet.Eta = b_genJetEta->at(j);
+            jet.Phi = b_genJetPhi->at(j);
+            jet.genJetChargedMultiplicity = b_genJetChargedMult->at(j);
+            jets.push_back(jet);
+        }
+        
+        // Read partons (like evolution_jet_bins.cc)
+        partons.clear();
+        for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
+            Parton p;
+            p.pdgid = b_par_pdgid->at(j);
+            p.px    = b_par_px->at(j);
+            p.py    = b_par_py->at(j);
+            p.pz    = b_par_pz->at(j);
+            p.e     = b_par_e->at(j);
+            p.x     = b_par_x->at(j);
+            p.y     = b_par_y->at(j);
+            p.z     = b_par_z->at(j);
+            p.t     = b_par_t->at(j);
+            
+            // Calculate parton kinematics
+            p.pt   = sqrt(p.px * p.px + p.py * p.py);
+            p.phi  = atan2(p.py, p.px);
+            double theta = atan2(p.pt, p.pz);
+            p.eta  = -log(tan(theta / 2.0));
+            
+            p.jetID       = -1;
+            p.jet_par_x   = 0.0;
+            p.jet_par_y   = 0.0;
+            p.jet_par_z   = 0.0;
+            p.jet_par_px  = 0.0;
+            p.jet_par_py  = 0.0;
+            p.jet_par_pz  = 0.0;
+            
+            partons.push_back(p);
+        }
         
         cout << "  Event " << ientry << ": " << jets.size() << " jets, " << partons.size() << " partons" << endl;
         
