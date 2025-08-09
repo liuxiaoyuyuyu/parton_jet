@@ -127,6 +127,24 @@ void readJets(TTree* tree, vector<Jet>& jets) {
     vector<float>* b_genJetPhi = nullptr;
     vector<int>* b_genJetChargedMult = nullptr;
     
+    // Check if branches exist
+    if (!tree->GetBranch("genJetPt")) {
+        cout << "    Error: Branch 'genJetPt' not found!" << endl;
+        return;
+    }
+    if (!tree->GetBranch("genJetEta")) {
+        cout << "    Error: Branch 'genJetEta' not found!" << endl;
+        return;
+    }
+    if (!tree->GetBranch("genJetPhi")) {
+        cout << "    Error: Branch 'genJetPhi' not found!" << endl;
+        return;
+    }
+    if (!tree->GetBranch("genJetChargedMultiplicity")) {
+        cout << "    Error: Branch 'genJetChargedMultiplicity' not found!" << endl;
+        return;
+    }
+    
     tree->SetBranchAddress("genJetPt", &b_genJetPt);
     tree->SetBranchAddress("genJetEta", &b_genJetEta);
     tree->SetBranchAddress("genJetPhi", &b_genJetPhi);
@@ -168,6 +186,12 @@ void readPartons(TTree* tree, vector<Parton>& partons) {
     tree->SetBranchAddress("par_y", &b_par_y);
     tree->SetBranchAddress("par_z", &b_par_z);
     tree->SetBranchAddress("par_t", &b_par_t);
+    
+    // Check if parton branches exist
+    if (!tree->GetBranch("par_pdgid")) {
+        cout << "    Error: Branch 'par_pdgid' not found!" << endl;
+        return;
+    }
     
     cout << "    Reading partons: " << b_par_pdgid->size() << " partons found" << endl;
     
@@ -447,6 +471,15 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         inFile->Close();
         return;
     }
+    
+    // Debug: List all available branches
+    cout << "Available branches in trackTree:" << endl;
+    TObjArray* branches = inTree->GetListOfBranches();
+    for (int i = 0; i < branches->GetEntries(); i++) {
+        TBranch* branch = (TBranch*)branches->At(i);
+        cout << "  " << branch->GetName() << endl;
+    }
+    cout << endl;
     
     int nentries = inTree->GetEntries();
     
