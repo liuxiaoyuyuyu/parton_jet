@@ -87,8 +87,8 @@ void initializeHistograms() {
             
             // v2 vs eccentricity correlation plot at specific tau
             name = Form("hv2vsEcc_Nch%d_etas%d", i, j);
-            title = Form("v2 vs Eccentricity at #tau=%.1f fm/c (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #varepsilon_{2}; v2", 
-                        tauForV2vsEcc, trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            title = Form("v2 vs Eccentricity at #tau<%.1f fm/c (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #varepsilon_{2}; v2", 
+                        tauForv2vsEcc, trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
             hv2vsEcc[i][j] = new TH2D(name, title, 50, 0, 1, 50, -1, 1);
         }
     }
