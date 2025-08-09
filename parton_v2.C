@@ -298,8 +298,8 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
         }
         
         // Fill histograms for each tau bin
-        for (int it = 1; it <= nTauBins; ++it) {
-            double tauTarget = it * maxTime / nTauBins; // Upper edge of the bin
+        for (int it = 1; it <= nTimeBins; ++it) {
+            double tauTarget = it * maxTime / nTimeBins; // Upper edge of the bin
             
             // Count partons whose formation time is smaller than tauTarget
             int nPartonsAtTau = 0;
