@@ -467,14 +467,16 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         cout << "  Event " << ientry << ": " << jets.size() << " jets, " << partons.size() << " partons" << endl;
         
         matchPartonsToJets(partons, jets);
+        cout << "  Matched " << partons.size() << " partons to " << jets.size() << " jets" << endl;
         transformToJetFrame(partons, jets);
+        cout << "  Transformed " << partons.size() << " partons to jet frame" << endl;
         
         // Calculate proper time for each parton
         for (auto& p : partons) {
             double z2 = p.jet_par_z * p.jet_par_z;
             p.tau = (p.t * p.t > z2) ? sqrt(p.t * p.t - z2) : 0.0;
         }
-        
+        cout << "  Calculated " << partons.size() << " partons' tau" << endl;
         // Group partons by jet
         partonsByJet.clear();
         for (int ip = 0; ip < partons.size(); ++ip) {
@@ -483,7 +485,7 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
                 partonsByJet[p.jetID].push_back(ip);
             }
         }
-        
+        cout << "  Grouped " << partons.size() << " partons by jet" << endl;
         // Fill binned observables
         cout << "  Filling observables for " << partonsByJet.size() << " jets" << endl;
         fillBinnedObservables(partonsByJet, partons, jets);
