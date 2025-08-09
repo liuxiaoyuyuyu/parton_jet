@@ -6,9 +6,9 @@
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH3F.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TH3D.h"
 #include "TProfile.h"
 #include "TCanvas.h"
 #include "TStyle.h"
@@ -25,22 +25,21 @@ using namespace std;
 struct Parton {
     int   pdgid;
 
-    float px, py, pz, e;
-    float x,  y,  z,  t;
-    float pt, eta, phi;
-    float eta_s, tau; // defined in jet frame
+    double px, py, pz, e;
+    double x,  y,  z,  t;
+    double pt, eta, phi;
+    double eta_s, tau; // defined in jet frame
 
     int   jetID;
 
-    float jet_par_x;
-    float jet_par_y;
-    float jet_par_z;
+    double jet_par_px, jet_par_py, jet_par_pz;
+    double jet_par_x, jet_par_y, jet_par_z;
 };
 
 struct Jet {
-    float Pt;
-    float Eta;
-    float Phi;
+    double Pt;
+    double Eta;
+    double Phi;
     int   genJetChargedMultiplicity;
     int multBin;
 };
@@ -52,9 +51,7 @@ struct Jet {
 int evolution_jet_bins(int idx) 
 {
     // 打开 ROOT 文件
-    // TString inputName = "../pp_parton_cascade_0.root";
-    //TString inputName = Form("/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_%d.root", idx * 200);
-    TString inputName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/pp_parton_cascade_%d.root", idx);
+    TString inputName = Form("/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_%d.root", idx * 200);
     TFile *file = TFile::Open(inputName);
     if (!file || file->IsZombie())
     {
@@ -94,9 +91,9 @@ int evolution_jet_bins(int idx)
     tree->SetBranchAddress("par_z",     &b_par_z);
     tree->SetBranchAddress("par_t",     &b_par_t);
 
-    vector<float>* b_genJetPt  = nullptr;
-    vector<float>* b_genJetEta = nullptr;
-    vector<float> *b_genJetPhi = nullptr;
+    vector<double>* b_genJetPt  = nullptr;
+    vector<double>* b_genJetEta = nullptr;
+    vector<double> *b_genJetPhi = nullptr;
     vector<int> *b_genJetChargedMult = nullptr;
 
     tree->SetBranchAddress("genJetPt",  &b_genJetPt);
@@ -108,27 +105,31 @@ int evolution_jet_bins(int idx)
     // 创建直方图
     //----------------------------------------------------------------------
 
-    double maxTime = 1;
+    int nTimeBins = 100;
+    double maxTime = 3;
+    double timeBinWidth = maxTime / nTimeBins;
 
-    TH1F *hTime = new TH1F("hTime", "Generation time distribution; t (fm/c); Entries", 100, 0, 100);
-    TH1F *hMult = new TH1F("hMult", "Jet multiplicity distribution; N_{ch}^{j}; Entries", 12, 0, 120);
-    TH2F *hJetMultParton = new TH2F("hJetMultParton", ";N_{ch}^{j};N_{p}^{j}", 50, 0, 100, 25, 0, 50);
+    TH1D *hTime = new TH1D("hTime", "Generation proper time distribution; #tau (fm/c); Entries", 100, 0, 100);
+    TH1D *hMult = new TH1D("hMult", "Jet multiplicity distribution; N_{ch}^{j}; Entries", 12, 0, 120);
+    TH2D *hJetMultParton = new TH2D("hJetMultParton", ";N_{ch}^{j};N_{p}^{j}", 50, 0, 100, 25, 0, 50);
 
-    TH2F *hMultTime[trackbin];
-    TH2F *hEccTime[trackbin];
-    TH2F *hDimTime[trackbin];
-    TH3F *hDenTime[trackbin];
-    TH3F *hNpTime[trackbin];
-    TH3F *hAreaTime[trackbin];
+    TH2D *hMultTime[trackbin];
+    TH2D *hEccTime[trackbin];
+    TH2D *hDimTime[trackbin];
+    TH3D *hDenTime[trackbin];
+    TH3D *hNpTime[trackbin];
+    TH3D *hAreaTime[trackbin];
+    TH2D *hATest[trackbin];
 
     for (int ibin = 0; ibin < trackbin; ibin++)
     {
-        hMultTime[ibin] = new TH2F(Form("hMultTime_%d", ibin), Form("Jet parton multiplicity vs time, %d < N_{ch}^{j} < %d; t (fm/c); N_{parton}", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, 50, 0, 50);
-        hEccTime[ibin] = new TH2F(Form("hEccTime_%d", ibin), Form("Eccentricity vs time, %d < N_{ch}^{j} < %d; t (fm/c); #epsilon_{2}", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, 50, 0, 1);
-        hDimTime[ibin] = new TH2F(Form("hDimTime_%d", ibin), Form("Dimension vs time, %d < N_{ch}^{j} < %d; t (fm/c); r (fm)", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, 50, 0, 2);
-        hDenTime[ibin] = new TH3F(Form("hDenTime_%d", ibin), Form("Density vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; density (fm^{-2})", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 200, 0, 200);
-        hNpTime[ibin] = new TH3F(Form("hNpTime_%d", ibin), Form("Parton number vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; # parton", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 60, 0, 60);
-        hAreaTime[ibin] = new TH3F(Form("hAreaTime_%d", ibin), Form("Area vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; S (fm^{2})", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), 40, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 100, 0, 100);
+        hMultTime[ibin] = new TH2D(Form("hMultTime_%d", ibin), Form("Jet parton multiplicity vs time, %d < N_{ch}^{j} < %d; t (fm/c); N_{parton}", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, 100, 0, 100);
+        hEccTime[ibin] = new TH2D(Form("hEccTime_%d", ibin), Form("Eccentricity vs time, %d < N_{ch}^{j} < %d; t (fm/c); #epsilon_{2}", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, 50, 0, 1);
+        hDimTime[ibin] = new TH2D(Form("hDimTime_%d", ibin), Form("Dimension vs time, %d < N_{ch}^{j} < %d; t (fm/c); r (fm)", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, 50, 0, 2);
+        hDenTime[ibin] = new TH3D(Form("hDenTime_%d", ibin), Form("Density vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; density (fm^{-2})", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 400, 0, 100);
+        hNpTime[ibin] = new TH3D(Form("hNpTime_%d", ibin), Form("Parton number vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; # parton", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 50, 0, 50);
+        hAreaTime[ibin] = new TH3D(Form("hAreaTime_%d", ibin), Form("Area vs time vs #eta_{s}, %d < N_{ch}^{j} < %d; t (fm/c); #eta_{s}; S (fm^{2})", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, etasbin, etasbinbounds[0], etasbinboundsUpper[etasbin - 1], 100, 0, 20);
+        hATest[ibin] = new TH2D(Form("hATest_%d", ibin), Form("Area vs time, %d < N_{ch}^{j} < %d, 1 < #eta_{s} < 2; t (fm/c); S (fm^{2})", trackbinbounds_MC[ibin], trackbinboundsUpper_MC[ibin]), nTimeBins, 0, maxTime, 100, 0, 20);
     }
 
     // 风格设置
@@ -193,13 +194,10 @@ int evolution_jet_bins(int idx)
             // 计算动量相关量
             p.pt   = sqrt(p.px*p.px + p.py*p.py);
             p.phi  = atan2(p.py, p.px);
-            float theta = atan2(p.pt, p.pz);
+            double theta = atan2(p.pt, p.pz);
             p.eta  = -log(tan(theta/2.0f));
 
             p.jetID       = -1;
-            p.jet_par_x   = 0.0f;
-            p.jet_par_y   = 0.0f;
-            p.jet_par_z   = 0.0f;
 
             partons.push_back(p);
         }
@@ -210,9 +208,9 @@ int evolution_jet_bins(int idx)
 
         for (auto& p : partons) {
             for (int j = 0; j < (int)jets.size(); ++j) {
-                float dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
-                float dEta = p.eta - jets[j].Eta;
-                float dR   = sqrt(dEta*dEta + dphi*dphi);
+                double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
+                double dEta = p.eta - jets[j].Eta;
+                double dR   = sqrt(dEta*dEta + dphi*dphi);
 
                 if (dR < 0.8f) {
                     p.jetID = j;
@@ -231,42 +229,57 @@ int evolution_jet_bins(int idx)
         // 坐标转换：实验室系 -> jet 参考系
         //----------------------------------------------------------------------
 
-        for (auto& p : partons) {
+        for (auto& p : partons) 
+        {
+            // Filter partons not belonging to any jet
+            if ((p.px == 0) && (p.py == 0) && (p.pz == 0)) p.jetID = -1;
             if (p.jetID < 0) continue;
 
+            // Rotate parton momenta to jet frame
+            TVector3 jv;
+            jv.SetPtEtaPhi(jets[p.jetID].Pt, jets[p.jetID].Eta, jets[p.jetID].Phi);
+
+            TVector3 mom(p.px, p.py, p.pz);
+
+            double ptJ_mom = ptWRTJet  (jv, mom);
+            double thJ_mom = thetaWRTJet(jv, mom);
+            double phJ_mom = phiWRTJet  (jv, mom);
+
+            p.jet_par_px = ptJ_mom * cos(phJ_mom);
+            p.jet_par_py = ptJ_mom * sin(phJ_mom);
+            p.jet_par_pz = ptJ_mom / tan(thJ_mom);
+
+            // Jet frame coordinates and proper time
             if ((p.x == 0) && (p.y == 0) && (p.z == 0))
             {
                 p.jet_par_x = 0;
                 p.jet_par_y = 0;
                 p.jet_par_z = 0;
-                continue;
+                p.tau = 0;
+            }
+            else 
+            {
+                TVector3 pos(p.x, p.y, p.z);
+
+                double ptJ = ptWRTJet(jv, pos);
+                double thJ = thetaWRTJet(jv, pos);
+                double phJ = phiWRTJet(jv, pos);
+
+                p.jet_par_x = ptJ * cos(phJ);
+                p.jet_par_y = ptJ * sin(phJ);
+                p.jet_par_z = ptJ / tan(thJ);
+                p.tau = sqrt(p.t * p.t - p.jet_par_z * p.jet_par_z);
             }
 
-            TVector3 jv;
-            jv.SetPtEtaPhi(
-                jets[p.jetID].Pt,
-                jets[p.jetID].Eta,
-                jets[p.jetID].Phi
-            );
-
-            TVector3 pos(p.x, p.y, p.z);
-
-            float ptJ = ptWRTJet  (jv, pos);
-            float thJ = thetaWRTJet(jv, pos);
-            float phJ = phiWRTJet  (jv, pos);
-
-            p.jet_par_x = ptJ * cos(phJ);
-            p.jet_par_y = ptJ * sin(phJ);
-            p.jet_par_z = ptJ / tan(thJ);
-
-            p.tau = sqrt(p.t * p.t - p.jet_par_z * p.jet_par_z);
-
-            // 计算空间-时间快度
-            if (p.t > p.jet_par_z) {
-                p.eta_s = 0.5f * log((p.t + p.jet_par_z) / (p.t - p.jet_par_z));
+            // Spacetime rapidity
+            if (p.t > p.jet_par_z) 
+            {
+                p.eta_s = 0.5 * log((p.t + p.jet_par_z) / (p.t - p.jet_par_z));
             }
-            else {
-                p.eta_s = -999.9f;
+            else 
+            {
+                double vz = p.jet_par_pz / p.e;
+                p.eta_s = 0.5 * log((1 + vz) / (1 - vz));
             }
         }
 
@@ -276,14 +289,14 @@ int evolution_jet_bins(int idx)
 
         unordered_map<int, vector<int>> partonsByJet;
 
-        for (int ip = 0; ip < partons.size(); ++ip) 
+        for (int ip = 0; ip < (int)partons.size(); ++ip) 
         {
             auto& p = partons[ip];
 
             if (p.jetID < 0) continue;
 
             partonsByJet[p.jetID].push_back(ip);
-            hTime->Fill(p.t);
+            hTime->Fill(p.tau);
         }
 
         for (auto &kv : partonsByJet) 
@@ -292,9 +305,10 @@ int evolution_jet_bins(int idx)
             hJetMultParton->Fill(jets[jID].genJetChargedMultiplicity, kv.second.size());
         }
 
-        for (int it = 1; it <= hMultTime[0]->GetNbinsX(); it++)
+        for (int itau = 1; itau <= nTimeBins; itau++)
         {
-            double t = hMultTime[0]->GetXaxis()->GetBinCenter(it);
+            double tau_lowEdge = (itau - 1) * timeBinWidth;
+            double tau_center = (itau - 0.5) * timeBinWidth;
 
             for (auto &kv : partonsByJet)
             {
@@ -302,61 +316,92 @@ int evolution_jet_bins(int idx)
                 int jBin = jets[jID].multBin;
 
                 auto &idxs = kv.second;
-                if (idxs.empty())
-                    continue;
+                if (idxs.empty()) continue;
 
                 int nPartons = 0;
                 double sumE = 0.0;
                 double sumx = 0.0;
                 double sumy = 0.0;
+                double sumE_test = 0, sumx_test = 0, sumy_test = 0;
 
                 for (int idx : idxs)
                 {
                     auto &P = partons[idx];
-                    if (P.t < t) 
+                    if (P.tau < tau_lowEdge) 
                     {
                         nPartons++;
 
-                        double x_jetzt = P.jet_par_x + (t - P.t) * P.px / P.e;
-                        double y_jetzt = P.jet_par_y + (t - P.t) * P.py / P.e;
+                        double t_lowEdge = tau_lowEdge * cosh(P.eta_s);
+                        double x_jetzt = P.jet_par_x + (t_lowEdge - P.t) * P.jet_par_px / P.e;
+                        double y_jetzt = P.jet_par_y + (t_lowEdge - P.t) * P.jet_par_py / P.e;
 
                         double w = P.e;
                         sumE += w;
                         sumx += w * x_jetzt;
                         sumy += w * y_jetzt;
+
+                        if (P.eta_s >= 1 && P.eta_s < 2) 
+                        {
+                            sumE_test += w;
+                            sumx_test += w * x_jetzt;
+                            sumy_test += w * y_jetzt;
+                        }
                     }
                 }
-                
-                hMultTime[jBin]->Fill(t, nPartons);
+                hMultTime[jBin]->Fill(tau_center, nPartons);
 
                 // eccentricity calculation, only proceed if it is well-defined
-                if (nPartons < 3) continue;
-
-                double xm = sumx / sumE;
-                double ym = sumy / sumE;
-
-                double real = 0.0;
-                double imag = 0.0;
-                double norm = 0.0;
-
-                for (int idx : idxs) 
+                if (nPartons > 1) 
                 {
-                    auto &P = partons[idx];
-                    if (P.t < t) 
+                    double xm = sumx / sumE;
+                    double ym = sumy / sumE;
+
+                    double xm_test = sumx_test / sumE_test;
+                    double ym_test = sumy_test / sumE_test;
+
+                    double real = 0.0;
+                    double imag = 0.0;
+                    double norm = 0.0;
+                    double x2sum_test = 0, y2sum_test = 0;
+
+                    for (int idx : idxs)
                     {
-                        double x_jetzt = P.jet_par_x + (t - P.t) * P.px / P.e;
-                        double y_jetzt = P.jet_par_y + (t - P.t) * P.py / P.e;
+                        auto &P = partons[idx];
+                        if (P.tau < tau_lowEdge)
+                        {
+                            double t_lowEdge = tau_lowEdge * cosh(P.eta_s);
+                            double x_jetzt = P.jet_par_x + (t_lowEdge - P.t) * P.jet_par_px / P.e;
+                            double y_jetzt = P.jet_par_y + (t_lowEdge - P.t) * P.jet_par_py / P.e;
 
-                        double dx = x_jetzt - xm;
-                        double dy = y_jetzt - ym;
-                        double r2 = dx * dx + dy * dy;
-                        double phi_loc = atan2(dy, dx);
-                        double w = P.e * r2;
+                            double dx = x_jetzt - xm;
+                            double dy = y_jetzt - ym;
+                            double r2 = dx * dx + dy * dy;
+                            double phi_loc = atan2(dy, dx);
+                            double w = P.e * r2;
 
-                        real += w * cos(2 * phi_loc);
-                        imag += w * sin(2 * phi_loc);
-                        norm += w;
+                            real += w * cos(2 * phi_loc);
+                            imag += w * sin(2 * phi_loc);
+                            norm += w;
+
+                            if (P.eta_s >= 1 && P.eta_s < 2)
+                            {
+                                double dx_test = x_jetzt - xm_test;
+                                double dy_test = y_jetzt - ym_test;
+                                x2sum_test += P.e * pow(dx_test, 2);
+                                y2sum_test += P.e * pow(dy_test, 2);
+                            }
+                        }
                     }
+                    double S_test = TMath::Pi() * sqrt(x2sum_test * y2sum_test) / sumE_test;
+                    //hATest[jBin]->Fill(t, S_test);
+
+                    double ecc = (norm > 0.0) ? sqrt(real * real + imag * imag) / norm : 0.0;
+                    double dimen = sqrt(norm / sumE);
+
+                    hEccTime[jBin]->Fill(tau_center, ecc);
+                    hDimTime[jBin]->Fill(tau_center, dimen);
+                    if (ecc > 1.0000001)
+                        cout << "WARNING: ecc = " << ecc << endl;
                 }
 
                 for (int ieta = 0; ieta < etasbin; ieta++)
@@ -365,14 +410,15 @@ int evolution_jet_bins(int idx)
                     for (int idx : idxs)
                     {
                         auto &P = partons[idx];
-                        if (P.t < t && P.eta_s >= etasbinbounds[ieta] && P.eta_s < etasbinboundsUpper[ieta])
+                        if (P.tau < tau_lowEdge && P.eta_s >= etasbinbounds[ieta] && P.eta_s < etasbinboundsUpper[ieta])
                         {
                             partonsIDbyEta.push_back(idx);
                         }
                     }
-
                     int nsubpartons = partonsIDbyEta.size();
-                    if (nsubpartons < 3) continue;
+                    hNpTime[jBin]->Fill(tau_center, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, nsubpartons);
+
+                    if (nsubpartons < 2) continue;
 
                     double subsume = 0, subsumx = 0, subsumy = 0;
 
@@ -380,8 +426,9 @@ int evolution_jet_bins(int idx)
                     {
                         auto &P = partons[idx];
 
-                        double x_jetzt = P.jet_par_x + (t - P.t) * P.px / P.e;
-                        double y_jetzt = P.jet_par_y + (t - P.t) * P.py / P.e;
+                        double t_lowEdge = tau_lowEdge * cosh(P.eta_s);
+                        double x_jetzt = P.jet_par_x + (t_lowEdge - P.t) * P.jet_par_px / P.e;
+                        double y_jetzt = P.jet_par_y + (t_lowEdge - P.t) * P.jet_par_py / P.e;
 
                         double w = P.e;
                         subsume += w;
@@ -398,31 +445,44 @@ int evolution_jet_bins(int idx)
                     {
                         auto &P = partons[idx];
 
-                        double x_jetzt = P.jet_par_x + (t - P.t) * P.px / P.e;
-                        double y_jetzt = P.jet_par_y + (t - P.t) * P.py / P.e;
+                        double t_lowEdge = tau_lowEdge * cosh(P.eta_s);
+                        double x_jetzt = P.jet_par_x + (t_lowEdge - P.t) * P.jet_par_px / P.e;
+                        double y_jetzt = P.jet_par_y + (t_lowEdge - P.t) * P.jet_par_py / P.e;
 
-                        double dx = x_jetzt - xm;
-                        double dy = y_jetzt - ym;
+                        double dx = x_jetzt - subxm;
+                        double dy = y_jetzt - subym;
 
                         x2sum += P.e * pow(dx, 2);
                         y2sum += P.e * pow(dy, 2);
                     }
 
                     double area = TMath::Pi() * sqrt(x2sum * y2sum) / subsume;
+                    if (ieta == 1) hATest[jBin]->Fill(tau_center, area);
+                    //if (area < 1e-6) continue;
                     double dens = nsubpartons / (etasbinboundsUpper[ieta] - etasbinbounds[ieta]) / area;
+                    /*
+                    if (0&&area < 1e-3) 
+                    {
+                        cout << "area = " << area << "\tdensity = " << dens << endl;
+                        for (int idx : partonsIDbyEta)
+                        {
+                            auto &P = partons[idx];
 
-                    hDenTime[jBin]->Fill(t, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, dens);
-                    hNpTime[jBin]->Fill(t, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, nsubpartons);
-                    hAreaTime[jBin]->Fill(t, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, area);
+                            double x_jetzt = P.jet_par_x + (t - P.t) * P.jet_par_px / P.e;
+                            double y_jetzt = P.jet_par_y + (t - P.t) * P.jet_par_py / P.e;
+
+                            double dx = x_jetzt - subxm;
+                            double dy = y_jetzt - subym;
+                            std::cout << "orig_pos=(" << P.jet_par_x << "," << P.jet_par_y << ") curr_pos=(" << x_jetzt << "," << y_jetzt << ") mom=(" << P.jet_par_px << "," << P.jet_par_py << ") e=" << P.e << " dx=" << dx << " dy=" << dy << std::endl;
+                        }
+                        cout << endl;
+                    }*/
+                    //if (jBin == 0 && dens > 1e3)
+                    //    cout << "Look: dens = " << dens << "\tnsubpartons = " << nsubpartons << "\tarea = " << area << endl;
+
+                    hDenTime[jBin]->Fill(tau_center, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, dens);
+                    hAreaTime[jBin]->Fill(tau_center, (etasbinbounds[ieta] + etasbinboundsUpper[ieta]) / 2, area);
                 }
-
-                double ecc = (norm > 0.0) ? sqrt(real * real + imag * imag) / norm : 0.0;
-                double dimen = sqrt(norm / sumE);
-
-                hEccTime[jBin]->Fill(t, ecc);
-                hDimTime[jBin]->Fill(t, dimen);
-                if (ecc > 1.0000001)
-                    cout << "WARNING: ecc = "<<ecc << endl;
             }
         }
     }
@@ -431,9 +491,7 @@ int evolution_jet_bins(int idx)
     // 绘图并保存
     //----------------------------------------------------------------------
 
-    // TString outputName = "../parton_jet_bins_0.root";
-    //TString outputName = Form("/eos/cms/store/group/phys_heavyions/huangxi/parton_jet_bins/parton_jet_bins_%d.root", idx);
-    TString outputName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/parton_jet_bins_%d.root", idx);
+    TString outputName = Form("/eos/cms/store/group/phys_heavyions/huangxi/parton_jet_bins/parton_jet_bins_%d.root", idx);
     TFile *outFile = TFile::Open(outputName, "RECREATE");
     if (!outFile || outFile->IsZombie()) {
         cerr << "Cannot create output file " << outputName << endl;
@@ -451,6 +509,7 @@ int evolution_jet_bins(int idx)
         hDenTime[ibin]->Write();
         hNpTime[ibin]->Write();
         hAreaTime[ibin]->Write();
+        hATest[ibin]->Write();
     }
 
     outFile->Close();

@@ -1,14 +1,30 @@
-#include "trackTree.C"
+#include <vector>
+#include <unordered_map>
+#include <iostream>
+#include <cmath>
+#include <TMath.h>
+
+#include "TFile.h"
+#include "TTree.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TH3F.h"
+#include "TProfile.h"
+#include "TCanvas.h"
+#include "TStyle.h"
+#include "TVector2.h"
 #include "coordinateTools.h"
 #include "binning.h"
 
-const double maxTime = 10;
-const int nTauBins = 40;
+using namespace std;
+
+const double maxTime = 3;
+const int nTimeBins = 100;
 
 // Global histograms for binned analysis
-TProfile* hV2VsTau[trackbin][etasbin];       // Average v2 vs tau with uncertainties
+TProfile* hv2VsTau[trackbin][etasbin];       // Average v2 vs tau with uncertainties
 TProfile* hEccVsTau[trackbin][etasbin];      // Average eccentricity vs tau with uncertainties
-TH1D* hV2RMSvsTau[trackbin][etasbin];        // RMS v2 vs tau
+TH1D* hv2RMSvsTau[trackbin][etasbin];        // RMS v2 vs tau
 TH1D* hEccRMSvsTau[trackbin][etasbin];       // RMS eccentricity vs tau
 
 // QA plots
@@ -18,46 +34,53 @@ TH1D* hNpartonVsTau;      // Nparton vs tau
 // Binned QA plots
 TH2D* hNpartonVsJetMult_binned[trackbin][etasbin];  // Nparton vs jet charged multiplicity per bin
 TH1D* hNpartonVsTau_binned[trackbin][etasbin];      // Nparton vs tau per bin
-TH1D* hPsi2_binned[trackbin][etasbin];              // Psi2 distribution per bin
+TH2D* hPsi2_binned[trackbin][etasbin];              // Psi2 distribution vs tau per bin
 
 // Initialize histograms for each bin
 void initializeHistograms() {
     // QA plots
-    hNpartonVsJetMult = new TH2D("hNpartonVsJetMult", "Nparton vs Jet Charged Multiplicity; Jet Charged Multiplicity; Nparton", 50, 0, 100, 50, 0, 100);
-    hNpartonVsTau = new TH1D("hNpartonVsTau", "Nparton vs Tau; #tau (fm/c); Nparton", 40, 0, maxTime);
+    hNpartonVsJetMult = new TH2D("hNpartonVsJetMult", "Nparton vs Jet Charged Multiplicity; Jet Charged Multiplicity; Nparton", 100, 0, 100, 100, 0, 100);
+    hNpartonVsTau = new TH1D("hNpartonVsTau", "Nparton vs Tau; #tau (fm/c); Nparton", nTimeBins, 0, maxTime);
     
     for (int i = 0; i < trackbin; i++) {
         for (int j = 0; j < etasbin; j++) {
             // TProfile for average values with uncertainties
-            TString name = Form("hV2VsTau_%d_%d", i, j);
-            TString title = Form("Average v2 vs tau (Nch bin %d, eta_s bin %d); #tau (fm/c); <v2>", i, j);
-            hV2VsTau[i][j] = new TProfile(name, title, 40, 0, maxTime, 0, 1);
+            TString name = Form("hv2VsTau_Nch%d_etas%d", i, j);
+            TString title = Form("Average v2 vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); <v2>", 
+                                trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hv2VsTau[i][j] = new TProfile(name, title, nTimeBins, 0, maxTime, 0, 1);
             
-            name = Form("hEccVsTau_%d_%d", i, j);
-            title = Form("Average Eccentricity vs tau (Nch bin %d, eta_s bin %d); #tau (fm/c); <#varepsilon_{2}>", i, j);
-            hEccVsTau[i][j] = new TProfile(name, title, 40, 0, maxTime, 0, 1);
+            name = Form("hEccVsTau_Nch%d_etas%d", i, j);
+            title = Form("Average Eccentricity vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); <#varepsilon_{2}>", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hEccVsTau[i][j] = new TProfile(name, title, nTimeBins, 0, maxTime, 0, 1);
             
             // RMS histograms
-            name = Form("hV2RMSvsTau_%d_%d", i, j);
-            title = Form("RMS v2 vs tau (Nch bin %d, eta_s bin %d); #tau (fm/c); v2^{RMS}", i, j);
-            hV2RMSvsTau[i][j] = new TH1D(name, title, 40, 0, maxTime);
+            name = Form("hv2RMSvsTau_Nch%d_etas%d", i, j);
+            title = Form("RMS v2 vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); v2^{RMS}", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hv2RMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
             
-            name = Form("hEccRMSvsTau_%d_%d", i, j);
-            title = Form("RMS Eccentricity vs tau (Nch bin %d, eta_s bin %d); #tau (fm/c); #varepsilon_{2}^{RMS}", i, j);
-            hEccRMSvsTau[i][j] = new TH1D(name, title, 40, 0, maxTime);
+            name = Form("hEccRMSvsTau_Nch%d_etas%d", i, j);
+            title = Form("RMS Eccentricity vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #varepsilon_{2}^{RMS}", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hEccRMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
             
             // Binned QA plots
-            name = Form("hNpartonVsJetMult_%d_%d", i, j);
-            title = Form("Nparton vs Jet Charged Multiplicity (Nch bin %d, eta_s bin %d); Jet Charged Multiplicity; Nparton", i, j);
+            name = Form("hNpartonVsJetMult_Nch%d_etas%d", i, j);
+            title = Form("Nparton vs Jet Charged Multiplicity (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); Jet Charged Multiplicity; Nparton", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
             hNpartonVsJetMult_binned[i][j] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
             
-            name = Form("hNpartonVsTau_%d_%d", i, j);
-            title = Form("Nparton vs Tau (Nch bin %d, eta_s bin %d); #tau (fm/c); Nparton", i, j);
-            hNpartonVsTau_binned[i][j] = new TH1D(name, title, 40, 0, maxTime);
+            name = Form("hNpartonVsTau_Nch%d_etas%d", i, j);
+            title = Form("Nparton vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); Nparton", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hNpartonVsTau_binned[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
             
-            name = Form("hPsi2_%d_%d", i, j);
-            title = Form("Psi2 Distribution (Nch bin %d, eta_s bin %d); #Psi_{2}; Counts", i, j);
-            hPsi2_binned[i][j] = new TH1D(name, title, 50, -TMath::Pi()/2, TMath::Pi()/2);
+            name = Form("hPsi2_Nch%d_etas%d", i, j);
+            title = Form("Psi2 Distribution vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #Psi_{2}; Counts", 
+                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            hPsi2_binned[i][j] = new TH2D(name, title, nTimeBins, 0, maxTime, 100, -TMath::Pi()/2, TMath::Pi()/2);
         }
     }
 }
@@ -86,32 +109,72 @@ struct Jet {
 };
 
 // Read and store jets
-void readJets(trackTree* tree, vector<Jet>& jets) {
+void readJets(TTree* tree, vector<Jet>& jets) {
     jets.clear();
-    for (int j = 0; j < (int)tree->genJetPt->size(); ++j) {
+    
+    // Set up branch addresses for jet data
+    vector<float>* b_genJetPt = nullptr;
+    vector<float>* b_genJetEta = nullptr;
+    vector<float>* b_genJetPhi = nullptr;
+    vector<int>* b_genJetChargedMult = nullptr;
+    
+    tree->SetBranchAddress("genJetPt", &b_genJetPt);
+    tree->SetBranchAddress("genJetEta", &b_genJetEta);
+    tree->SetBranchAddress("genJetPhi", &b_genJetPhi);
+    tree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
+    
+    // Get the current entry
+    tree->GetEntry(tree->GetReadEntry());
+    
+    for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
         Jet jet;
-        jet.Pt = tree->genJetPt->at(j);
-        jet.Eta = tree->genJetEta->at(j);
-        jet.Phi = tree->genJetPhi->at(j);
-        jet.genJetChargedMultiplicity = tree->genJetChargedMultiplicity->at(j);
+        jet.Pt = b_genJetPt->at(j);
+        jet.Eta = b_genJetEta->at(j);
+        jet.Phi = b_genJetPhi->at(j);
+        jet.genJetChargedMultiplicity = b_genJetChargedMult->at(j);
         jets.push_back(jet);
     }
 }
 
 // Read and store partons
-void readPartons(trackTree* tree, vector<Parton>& partons) {
+void readPartons(TTree* tree, vector<Parton>& partons) {
     partons.clear();
-    for (int j = 0; j < (int)tree->par_pdgid->size(); ++j) {
+    
+    // Set up branch addresses for parton data
+    vector<int>* b_par_pdgid = nullptr;
+    vector<double>* b_par_px = nullptr;
+    vector<double>* b_par_py = nullptr;
+    vector<double>* b_par_pz = nullptr;
+    vector<double>* b_par_e = nullptr;
+    vector<double>* b_par_x = nullptr;
+    vector<double>* b_par_y = nullptr;
+    vector<double>* b_par_z = nullptr;
+    vector<double>* b_par_t = nullptr;
+    
+    tree->SetBranchAddress("par_pdgid", &b_par_pdgid);
+    tree->SetBranchAddress("par_px", &b_par_px);
+    tree->SetBranchAddress("par_py", &b_par_py);
+    tree->SetBranchAddress("par_pz", &b_par_pz);
+    tree->SetBranchAddress("par_e", &b_par_e);
+    tree->SetBranchAddress("par_x", &b_par_x);
+    tree->SetBranchAddress("par_y", &b_par_y);
+    tree->SetBranchAddress("par_z", &b_par_z);
+    tree->SetBranchAddress("par_t", &b_par_t);
+    
+    // Get the current entry
+    tree->GetEntry(tree->GetReadEntry());
+    
+    for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
         Parton p;
-        p.pdgid = (double)tree->par_pdgid->at(j);
-        p.px    = (double)tree->par_px->at(j);
-        p.py    = (double)tree->par_py->at(j);
-        p.pz    = (double)tree->par_pz->at(j);
-        p.e     = (double)tree->par_e->at(j);
-        p.x     = (double)tree->par_x->at(j);
-        p.y     = (double)tree->par_y->at(j);
-        p.z     = (double)tree->par_z->at(j);
-        p.t     = (double)tree->par_t->at(j);
+        p.pdgid = b_par_pdgid->at(j);
+        p.px    = b_par_px->at(j);
+        p.py    = b_par_py->at(j);
+        p.pz    = b_par_pz->at(j);
+        p.e     = b_par_e->at(j);
+        p.x     = b_par_x->at(j);
+        p.y     = b_par_y->at(j);
+        p.z     = b_par_z->at(j);
+        p.t     = b_par_t->at(j);
         
         // Calculate parton kinematics
         p.pt   = sqrt(p.px * p.px + p.py * p.py);
@@ -226,45 +289,75 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
             }
         }
         
+        // Fill binned QA plots that don't depend on tau (once per jet)
+        for (int etaBin = 0; etaBin < etasbin; etaBin++) {
+            const auto& etaPartons = partonsByEtaBin[etaBin];
+            if (etaPartons.size() >= 2) {
+                hNpartonVsJetMult_binned[multBin][etaBin]->Fill(jetChargedMult, etaPartons.size());
+            }
+        }
+        
         // Fill histograms for each tau bin
         for (int it = 1; it <= nTauBins; ++it) {
-            double tauTarget = it * maxTime / nTauBins;
+            double tauTarget = it * maxTime / nTauBins; // Upper edge of the bin
             
-            // Fill QA plot for Nparton vs tau
-            hNpartonVsTau->Fill(tauTarget, npartons);
+            // Count partons whose formation time is smaller than tauTarget
+            int nPartonsAtTau = 0;
+            for (int idx : idxs) {
+                const auto& P = partons[idx];
+                if (P.tau < tauTarget) nPartonsAtTau++;
+            }
+            hNpartonVsTau->Fill(tauTarget, nPartonsAtTau);
             
             // Calculate observables for each eta_s bin separately
             for (int etaBin = 0; etaBin < etasbin; etaBin++) {
                 const auto& etaPartons = partonsByEtaBin[etaBin];
                 if (etaPartons.size() < 2) continue; // Need at least 2 partons
                 
-                // Compute spatial centroid at tauTarget for this eta_s bin
-                double sumE = 0, sumx = 0, sumy = 0;
+                // Count partons in this eta_s bin whose formation time is smaller than tauTarget
+                int nPartonsInEtaBin = 0;
                 for (int idx : etaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau > tauTarget) continue;
-                    double dt = tauTarget - P.tau;
-                    double x = P.jet_par_x + dt * P.jet_par_px / P.e;
-                    double y = P.jet_par_y + dt * P.jet_par_py / P.e;
-                    sumE += P.e;
-                    sumx += P.e * x;
-                    sumy += P.e * y;
+                    if (P.tau < tauTarget) nPartonsInEtaBin++;
                 }
+                
+                if (nPartonsInEtaBin < 2) continue; // Need at least 2 partons
+                
+                // Compute spatial centroid and eccentricity in one loop
+                double sumE = 0, sumx = 0, sumy = 0;
+                double Re = 0, Im = 0, Wtot = 0;
+                
+                for (int idx : etaPartons) {
+                    const auto& P = partons[idx];
+                    if (P.tau >= tauTarget) continue;
+                    
+                    // Use lab time for free streaming (from evolution_jet_bins.cc)
+                    double t_upperEdge = tauTarget * cosh(P.eta_s);
+                    double x_jetzt = P.jet_par_x + (t_upperEdge - P.t) * P.jet_par_px / P.e;
+                    double y_jetzt = P.jet_par_y + (t_upperEdge - P.t) * P.jet_par_py / P.e;
+                    
+                    sumE += P.e;
+                    sumx += P.e * x_jetzt;
+                    sumy += P.e * y_jetzt;
+                }
+                
                 if (sumE == 0) continue;
                 
                 double xm = sumx / sumE;
                 double ym = sumy / sumE;
                 
-                // Compute eccentricity for this eta_s bin
-                double Re = 0, Im = 0, Wtot = 0;
+                // Compute eccentricity in the same loop as centroid calculation
                 for (int idx : etaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau > tauTarget) continue;
-                    double dt = tauTarget - P.tau;
-                    double x = P.jet_par_x + dt * P.jet_par_px / P.e;
-                    double y = P.jet_par_y + dt * P.jet_par_py / P.e;
-                    double dx = x - xm;
-                    double dy = y - ym;
+                    if (P.tau >= tauTarget) continue;
+                    
+                    // Use lab time for free streaming
+                    double t_upperEdge = tauTarget * cosh(P.eta_s);
+                    double x_jetzt = P.jet_par_x + (t_upperEdge - P.t) * P.jet_par_px / P.e;
+                    double y_jetzt = P.jet_par_y + (t_upperEdge - P.t) * P.jet_par_py / P.e;
+                    
+                    double dx = x_jetzt - xm;
+                    double dy = y_jetzt - ym;
                     double r2 = dx * dx + dy * dy;
                     double phi = atan2(dy, dx);
                     double w = P.e * r2;
@@ -272,36 +365,31 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     Im += w * sin(2 * phi);
                     Wtot += w;
                 }
+                
                 if (Wtot == 0) continue;
                 
-                double eps2 = sqrt(Re * Re + Im * Im) / Wtot;
+                double ecc = sqrt(Re * Re + Im * Im) / Wtot;
                 double psi2 = 0.5 * atan2(Im, Re);
+                hEccVsTau[multBin][etaBin]->Fill(tauTarget, ecc); 
                 
-                // Compute v2 for this eta_s bin
-                double sumV2 = 0;
-                int n = 0;
+                // Fill TProfile directly per parton and QA plots in one loop
                 for (int idx : etaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau > tauTarget) continue;
+                    if (P.tau >= tauTarget) continue;
+                    
                     double phi_mom = atan2(P.jet_par_py, P.jet_par_px);
-                    sumV2 += cos(2 * (phi_mom - psi2));
-                    ++n;
+                    double v2 = cos(2 * (phi_mom - psi2));
+                    
+                    // Fill TProfile directly - it will average over all partons in all jets
+                    hv2VsTau[multBin][etaBin]->Fill(tauTarget, v2);
                 }
                 
-                if (n > 0) {
-                    double v2 = sumV2 / n;
-                    // Use TProfile which automatically handles uncertainties
-                    hV2VsTau[multBin][etaBin]->Fill(tauTarget, v2);
-                    hEccVsTau[multBin][etaBin]->Fill(tauTarget, eps2);
-                    
-                    // Fill binned QA plots
-                    hNpartonVsJetMult_binned[multBin][etaBin]->Fill(jetChargedMult, etaPartons.size());
-                    hNpartonVsTau_binned[multBin][etaBin]->Fill(tauTarget, etaPartons.size());
-                    hPsi2_binned[multBin][etaBin]->Fill(psi2);
-                }
-            }
-        }
-    }
+                // Fill binned QA plots
+                hNpartonVsTau_binned[multBin][etaBin]->Fill(tauTarget, nPartonsInEtaBin); // Number of partons with tau < tauTarget
+                hPsi2_binned[multBin][etaBin]->Fill(tauTarget, psi2);
+            }//loop over eta_s
+        }//loop over tau
+    }//loop over jet
 }
 
 // Compute RMS correctly: RMS = sqrt(<x^2> - <x>^2)
@@ -311,7 +399,8 @@ void computeRMSvsTau(TProfile* hInput, TH1D* hRMS) {
         int entries = hInput->GetBinEntries(i);
         
         if (entries > 0) {
-            // For TProfile, the error is already RMS/sqrt(N), so RMS = error * sqrt(N)
+            // For TProfile, we can get RMS directly from the error
+            // TProfile error = RMS/sqrt(N), so RMS = error * sqrt(N)
             double error = hInput->GetBinError(i);
             double rms = error * sqrt(entries);
             hRMS->SetBinContent(i, rms);
@@ -321,7 +410,7 @@ void computeRMSvsTau(TProfile* hInput, TH1D* hRMS) {
     }
 }
 
-void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
+void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_0.root") {
     // Initialize histograms
     initializeHistograms();
     
@@ -339,7 +428,6 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
         return;
     }
     
-    trackTree *tree = new trackTree(inTree);
     int nentries = inTree->GetEntries();
     
     // Prepare containers
@@ -349,10 +437,10 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
     
     // Event loop
     for (int ientry = 0; ientry < nentries; ientry++) {
-        tree->GetEntry(ientry);
+        inTree->GetEntry(ientry);
         
-        readJets(tree, jets);
-        readPartons(tree, partons);
+        readJets(inTree, jets);
+        readPartons(inTree, partons);
         
         matchPartonsToJets(partons, jets);
         transformToJetFrame(partons, jets);
@@ -376,16 +464,13 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
         fillBinnedObservables(partonsByJet, partons, jets);
     }
     
-    // Compute RMS for each bin (TProfile already handles averages and uncertainties)
-    // Note: RMS calculation temporarily disabled due to TProfile array access issues
-    /*
+    // Compute RMS for each bin
     for (int i = 0; i < trackbin; i++) {
         for (int j = 0; j < etasbin; j++) {
-            computeRMSvsTau(hV2VsTau[i][j], hV2RMSvsTau[i][j]);
+            computeRMSvsTau(hv2VsTau[i][j], hv2RMSvsTau[i][j]);
             computeRMSvsTau(hEccVsTau[i][j], hEccRMSvsTau[i][j]);
         }
     }
-    */
     
     // Create output file
     TString baseFileName = TString(inputFileName);
@@ -399,10 +484,10 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
     // Write histograms
     for (int i = 0; i < trackbin; i++) {
         for (int j = 0; j < etasbin; j++) {
-            hV2VsTau[i][j]->Write();
+            hv2VsTau[i][j]->Write();
             hEccVsTau[i][j]->Write();
-            // hV2RMSvsTau[i][j]->Write();  // Temporarily disabled
-            // hEccRMSvsTau[i][j]->Write(); // Temporarily disabled
+            hv2RMSvsTau[i][j]->Write();
+            hEccRMSvsTau[i][j]->Write();
         }
     }
     
@@ -421,5 +506,4 @@ void parton_v2(const char* inputFileName = "pp_parton_cascade_1.root") {
     
     outFile->Close();
     inFile->Close();
-    delete tree;
 }
