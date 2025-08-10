@@ -242,6 +242,14 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
             
             // Debug: Track parton counts for first few tau bins
             static int lastCount = 0;
+            static int lastJet = -1;
+            
+            // Reset lastCount for new jets
+            if (multBin != lastJet) {
+                lastCount = 0;
+                lastJet = multBin;
+            }
+            
             if (multBin == 0 && it <= 5) {
                 cout << "  Tau bin " << it << " (tau < " << tauTarget << "): " << nPartonsAtTau << " partons";
                 if (nPartonsAtTau < lastCount && nPartonsAtTau > 0) {
@@ -250,8 +258,6 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 cout << endl;
                 lastCount = nPartonsAtTau;
             }
-            // Reset lastCount for new jets
-            if (it == 1) lastCount = 0;
             
             // For TProfile, we want to average the number of partons per jet at each tau
             // So we fill with the count for this specific jet
@@ -298,6 +304,14 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 
                 // Debug: Track eta_s binned parton counts
                 static int lastEtaBinCount = 0;
+                static int lastEtaJet = -1;
+                
+                // Reset lastEtaBinCount for new jets
+                if (multBin != lastEtaJet) {
+                    lastEtaBinCount = 0;
+                    lastEtaJet = multBin;
+                }
+                
                 if (multBin == 0 && etaBin == 0 && it <= 5) {
                     cout << "    Eta_s bin " << etaBin << ", tau bin " << it << ": " << nPartonsInEtaBin << " partons";
                     if (nPartonsInEtaBin < lastEtaBinCount && nPartonsInEtaBin > 0) {
@@ -306,8 +320,6 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     cout << endl;
                     lastEtaBinCount = nPartonsInEtaBin;
                 }
-                // Reset lastEtaBinCount for new jets
-                if (it == 1) lastEtaBinCount = 0;
                 
 
                 
