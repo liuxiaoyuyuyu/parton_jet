@@ -18,8 +18,8 @@
 
 using namespace std;
 
-const double maxTime = 10;
-const int nTimeBins = 100;
+const double maxTime = 9;
+const int nTimeBins = 300;
 const double tauForv2vsEcc = 3.0; // tau value for v2 vs eccentricity correlation plot
 
 // Global histograms for binned analysis
