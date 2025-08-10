@@ -234,6 +234,18 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
             // So we fill with the count for this specific jet
             hNpartonVsTau->Fill(tauTarget, nPartonsAtTau);
             
+            // Debug: Check for non-monotonic behavior in the first few events
+            static int lastCount = 0;
+            static int eventCounter = 0;
+            if (ientry < 3 && multBin == 0 && it <= 10) {
+                if (nPartonsAtTau < lastCount && nPartonsAtTau > 0) {
+                    cout << "WARNING: Non-monotonic parton count! Event=" << ientry 
+                         << ", Jet=" << multBin << ", tau=" << tauTarget 
+                         << ", count=" << nPartonsAtTau << ", previous=" << lastCount << endl;
+                }
+                lastCount = nPartonsAtTau;
+            }
+            
 
             
 
@@ -243,11 +255,32 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 const auto& etaPartons = partonsByEtaBin[etaBin];
                 if (etaPartons.size() < 2) continue; // Need at least 2 partons
                 
+                // Debug: Check eta_s binning for first few events
+                if (ientry < 3 && multBin == 0 && etaBin == 0) {
+                    cout << "Event " << ientry << ", Jet " << multBin << ", Eta_s bin " << etaBin 
+                         << ": " << etaPartons.size() << " partons" << endl;
+                    for (int idx : etaPartons) {
+                        cout << "  Parton " << idx << ": eta_s=" << partons[idx].eta_s 
+                             << ", tau=" << partons[idx].tau << endl;
+                    }
+                }
+                
                 // Count partons in this eta_s bin whose formation time is smaller than tauTarget
                 int nPartonsInEtaBin = 0;
                 for (int idx : etaPartons) {
                     const auto& P = partons[idx];
                     if (P.tau < tauTarget) nPartonsInEtaBin++;
+                }
+                
+                // Debug: Check for non-monotonic behavior in eta_s binned histograms
+                static int lastEtaBinCount = 0;
+                if (ientry < 3 && multBin == 0 && etaBin == 0 && it <= 10) {
+                    if (nPartonsInEtaBin < lastEtaBinCount && nPartonsInEtaBin > 0) {
+                        cout << "WARNING: Non-monotonic eta_s binned count! Event=" << ientry 
+                             << ", Jet=" << multBin << ", EtaBin=" << etaBin << ", tau=" << tauTarget 
+                             << ", count=" << nPartonsInEtaBin << ", previous=" << lastEtaBinCount << endl;
+                    }
+                    lastEtaBinCount = nPartonsInEtaBin;
                 }
                 
                 if (nPartonsInEtaBin < 2) continue; // Need at least 2 partons
