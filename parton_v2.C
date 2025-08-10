@@ -200,9 +200,8 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
         
         for (int idx : idxs) {
             const auto& P = partons[idx];
-            // Calculate eta_s in jet frame (similar to tau calculation)
-            double z2 = P.jet_par_z * P.jet_par_z;
-            double eta_s = (P.t * P.t > z2) ? 0.5 * log((P.t + P.jet_par_z) / (P.t - P.jet_par_z)) : 0.0;
+            // Use the pre-calculated eta_s value
+            double eta_s = P.eta_s;
             
             // Assign parton to appropriate eta_s bin
             for (int j = 0; j < etasbin; j++) {
@@ -231,7 +230,13 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 const auto& P = partons[idx];
                 if (P.tau < tauTarget) nPartonsAtTau++;
             }
+            // For TProfile, we want to average the number of partons per jet at each tau
+            // So we fill with the count for this specific jet
             hNpartonVsTau->Fill(tauTarget, nPartonsAtTau);
+            
+
+            
+
             
             // Calculate observables for each eta_s bin separately
             for (int etaBin = 0; etaBin < etasbin; etaBin++) {
@@ -460,11 +465,21 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         matchPartonsToJets(partons, jets);
         transformToJetFrame(partons, jets);
         
-        // Calculate proper time for each parton
+        // Calculate proper time and eta_s for each parton
         for (auto& p : partons) {
             double z2 = p.jet_par_z * p.jet_par_z;
             p.tau = (p.t * p.t > z2) ? sqrt(p.t * p.t - z2) : 0.0;
+            
+            // Spacetime rapidity (same as evolution_jet_bins.cc)
+            if (p.t > p.jet_par_z) {
+                p.eta_s = 0.5 * log((p.t + p.jet_par_z) / (p.t - p.jet_par_z));
+            } else {
+                double vz = p.jet_par_pz / p.e;
+                p.eta_s = 0.5 * log((1 + vz) / (1 - vz));
+            }
         }
+        
+
         // Group partons by jet
         partonsByJet.clear();
         for (int ip = 0; ip < partons.size(); ++ip) {
