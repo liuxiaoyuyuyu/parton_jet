@@ -345,7 +345,8 @@ void computeRMSvsTau(TProfile* hInput, TH1D* hRMS) {
     }
 }
 
-void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_0.root") {
+void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_0.root", 
+               const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/") {
     // Initialize histograms
     initializeHistograms();
     
@@ -484,13 +485,13 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         }
     }
     
-    // Create output file
+    // Create output file based on input filename
     TString baseFileName = TString(inputFileName);
     baseFileName.ReplaceAll(".root", "");
     baseFileName.ReplaceAll("/", "_");
     baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_huangxi_PC_", "");
     
-    TString outputFileName = Form("/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/parton_v2_output_%s.root", baseFileName.Data());
+    TString outputFileName = Form("%sparton_v2_output_%s.root", outputDir, baseFileName.Data());
     TFile* outFile = TFile::Open(outputFileName, "RECREATE");
     
     // Write histograms
