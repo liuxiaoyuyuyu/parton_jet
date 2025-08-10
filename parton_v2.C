@@ -212,6 +212,15 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
             }
         }
         
+        // Debug: Show eta_s bin assignments for first few partons
+        if (multBin == 0) {
+            cout << "  Eta_s bin assignments for jet " << multBin << ":" << endl;
+            for (int j = 0; j < etasbin; j++) {
+                cout << "    Eta_s bin " << j << " (" << etasbinbounds[j] << " <= eta_s < " << etasbinboundsUpper[j] << "): " 
+                     << partonsByEtaBin[j].size() << " partons" << endl;
+            }
+        }
+        
         // Fill binned QA plots that don't depend on tau (once per jet)
         for (int etaBin = 0; etaBin < etasbin; etaBin++) {
             const auto& etaPartons = partonsByEtaBin[etaBin];
@@ -230,6 +239,20 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 const auto& P = partons[idx];
                 if (P.tau < tauTarget) nPartonsAtTau++;
             }
+            
+            // Debug: Track parton counts for first few tau bins
+            static int lastCount = 0;
+            if (multBin == 0 && it <= 5) {
+                cout << "  Tau bin " << it << " (tau < " << tauTarget << "): " << nPartonsAtTau << " partons";
+                if (nPartonsAtTau < lastCount && nPartonsAtTau > 0) {
+                    cout << "  *** NON-MONOTONIC! ***";
+                }
+                cout << endl;
+                lastCount = nPartonsAtTau;
+            }
+            // Reset lastCount for new jets
+            if (it == 1) lastCount = 0;
+            
             // For TProfile, we want to average the number of partons per jet at each tau
             // So we fill with the count for this specific jet
             hNpartonVsTau->Fill(tauTarget, nPartonsAtTau);
@@ -241,18 +264,50 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
 
             
             // Calculate observables for each eta_s bin separately
+            // For each tau bin, we need to recalculate which partons belong to each eta_s bin
+            // because eta_s changes over time
             for (int etaBin = 0; etaBin < etasbin; etaBin++) {
-                const auto& etaPartons = partonsByEtaBin[etaBin];
-                if (etaPartons.size() < 2) continue; // Need at least 2 partons
+                // Find partons that belong to this eta_s bin at the current tau
+                std::vector<int> currentEtaPartons;
+                
+                for (int idx : idxs) {
+                    const auto& P = partons[idx];
+                    if (P.tau >= tauTarget) continue; // Skip partons not yet formed
+                    
+                    // Calculate current eta_s at this tau value
+                    double t_current = tauTarget * cosh(P.eta_s);
+                    double z_current = P.jet_par_z + (t_current - P.t) * P.jet_par_pz / P.e;
+                    double eta_s_current = 0.0;
+                    
+                    if (t_current * t_current > z_current * z_current) {
+                        eta_s_current = 0.5 * log((t_current + z_current) / (t_current - z_current));
+                    }
+                    
+                    // Check if parton belongs to this eta_s bin at current time
+                    if (eta_s_current >= etasbinbounds[etaBin] && eta_s_current < etasbinboundsUpper[etaBin]) {
+                        currentEtaPartons.push_back(idx);
+                    }
+                }
+                
+                if (currentEtaPartons.size() < 2) continue; // Need at least 2 partons
                 
 
                 
-                // Count partons in this eta_s bin whose formation time is smaller than tauTarget
-                int nPartonsInEtaBin = 0;
-                for (int idx : etaPartons) {
-                    const auto& P = partons[idx];
-                    if (P.tau < tauTarget) nPartonsInEtaBin++;
+                // Count partons in this eta_s bin at current tau
+                int nPartonsInEtaBin = currentEtaPartons.size();
+                
+                // Debug: Track eta_s binned parton counts
+                static int lastEtaBinCount = 0;
+                if (multBin == 0 && etaBin == 0 && it <= 5) {
+                    cout << "    Eta_s bin " << etaBin << ", tau bin " << it << ": " << nPartonsInEtaBin << " partons";
+                    if (nPartonsInEtaBin < lastEtaBinCount && nPartonsInEtaBin > 0) {
+                        cout << "  *** NON-MONOTONIC ETA_S BINNED! ***";
+                    }
+                    cout << endl;
+                    lastEtaBinCount = nPartonsInEtaBin;
                 }
+                // Reset lastEtaBinCount for new jets
+                if (it == 1) lastEtaBinCount = 0;
                 
 
                 
@@ -262,9 +317,8 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 double sumE = 0, sumx = 0, sumy = 0;
                 double Re = 0, Im = 0, Wtot = 0;
                 
-                for (int idx : etaPartons) {
+                for (int idx : currentEtaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau >= tauTarget) continue;
                     
                     // Use lab time for free streaming (from evolution_jet_bins.cc)
                     double t_upperEdge = tauTarget * cosh(P.eta_s);
@@ -282,9 +336,8 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 double ym = sumy / sumE;
                 
                 // Compute eccentricity in the same loop as centroid calculation
-                for (int idx : etaPartons) {
+                for (int idx : currentEtaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau >= tauTarget) continue;
                     
                     // Use lab time for free streaming
                     double t_upperEdge = tauTarget * cosh(P.eta_s);
@@ -501,8 +554,16 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         if (ientry < 3) {
             cout << "Event " << ientry << ": " << jets.size() << " jets, " << partons.size() << " partons" << endl;
             for (int i = 0; i < min(3, (int)partons.size()); i++) {
-                cout << "  Parton " << i << ": tau=" << partons[i].tau << ", eta_s=" << partons[i].eta_s << endl;
+                cout << "  Parton " << i << ": tau=" << partons[i].tau << ", eta_s=" << partons[i].eta_s 
+                     << ", jetID=" << partons[i].jetID << endl;
             }
+            
+            // Count partons matched to jets
+            int matchedPartons = 0;
+            for (const auto& p : partons) {
+                if (p.jetID >= 0) matchedPartons++;
+            }
+            cout << "  Matched partons: " << matchedPartons << "/" << partons.size() << endl;
         }
     }
     
