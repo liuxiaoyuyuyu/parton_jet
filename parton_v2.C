@@ -26,24 +26,24 @@ const double tauForv2vsEcc = 3.0; // tau value for v2 vs eccentricity correlatio
 TProfile* hv2VsTau[trackbin][etasbin];       // Average v2 vs tau with uncertainties
 TProfile* hEccVsTau[trackbin][etasbin];      // Average eccentricity vs tau with uncertainties
 
-TH1D* hv2RMSvsTau[trackbin][etasbin];        // RMS v2 vs tau
-TH1D* hEccRMSvsTau[trackbin][etasbin];       // RMS eccentricity vs tau
+// TH1D* hv2RMSvsTau[trackbin][etasbin];        // RMS v2 vs tau - COMMENTED OUT
+// TH1D* hEccRMSvsTau[trackbin][etasbin];       // RMS eccentricity vs tau - COMMENTED OUT
 TH2D* hv2vsEcc[trackbin][etasbin];           // v2 vs eccentricity correlation at tau=3fm/c
 
 // QA plots
 TH2D* hNpartonVsJetMult;  // Nparton vs jet charged multiplicity
-TH1D* hNpartonVsTau;      // Nparton vs tau
+TProfile* hNpartonVsTau;  // Nparton vs tau (changed to TProfile)
 
 // Binned QA plots
 TH2D* hNpartonVsJetMult_binned[trackbin][etasbin];  // Nparton vs jet charged multiplicity per bin
-TH1D* hNpartonVsTau_binned[trackbin][etasbin];      // Nparton vs tau per bin
+TProfile* hNpartonVsTau_binned[trackbin][etasbin];  // Nparton vs tau per bin (changed to TProfile)
 TH2D* hPsi2_binned[trackbin][etasbin];              // Psi2 distribution vs tau per bin
 
 // Initialize histograms for each bin
 void initializeHistograms() {
     // QA plots
     hNpartonVsJetMult = new TH2D("hNpartonVsJetMult", "Nparton vs Jet Charged Multiplicity; Jet Charged Multiplicity; Nparton", 100, 0, 100, 100, 0, 100);
-    hNpartonVsTau = new TH1D("hNpartonVsTau", "Nparton vs Tau; #tau (fm/c); Nparton", nTimeBins, 0, maxTime);
+    hNpartonVsTau = new TProfile("hNpartonVsTau", "Nparton vs Tau; #tau (fm/c); <Nparton>", nTimeBins, 0, maxTime);
     
     for (int i = 0; i < trackbin; i++) {
         for (int j = 0; j < etasbin; j++) {
@@ -58,16 +58,16 @@ void initializeHistograms() {
                         trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
             hEccVsTau[i][j] = new TProfile(name, title, nTimeBins, 0, maxTime, 0, 1);
             
-            // RMS histograms
-            name = Form("hv2RMSvsTau_Nch%d_etas%d", i, j);
-            title = Form("RMS v2 vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); v2^{RMS}", 
-                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
-            hv2RMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
+            // RMS histograms - COMMENTED OUT
+            // name = Form("hv2RMSvsTau_Nch%d_etas%d", i, j);
+            // title = Form("RMS v2 vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); v2^{RMS}", 
+            //             trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            // hv2RMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
             
-            name = Form("hEccRMSvsTau_Nch%d_etas%d", i, j);
-            title = Form("RMS Eccentricity vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #varepsilon_{2}^{RMS}", 
-                        trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
-            hEccRMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
+            // name = Form("hEccRMSvsTau_Nch%d_etas%d", i, j);
+            // title = Form("RMS Eccentricity vs tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #varepsilon_{2}^{RMS}", 
+            //             trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
+            // hEccRMSvsTau[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
             
             // Binned QA plots
             name = Form("hNpartonVsJetMult_Nch%d_etas%d", i, j);
@@ -76,9 +76,9 @@ void initializeHistograms() {
             hNpartonVsJetMult_binned[i][j] = new TH2D(name, title, 100, 0, 100, 100, 0, 100);
             
             name = Form("hNpartonVsTau_Nch%d_etas%d", i, j);
-            title = Form("Nparton vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); Nparton", 
+            title = Form("Nparton vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); <Nparton>", 
                         trackbinbounds_MC[i], trackbinboundsUpper_MC[i], etasbinbounds[j], etasbinboundsUpper[j]);
-            hNpartonVsTau_binned[i][j] = new TH1D(name, title, nTimeBins, 0, maxTime);
+            hNpartonVsTau_binned[i][j] = new TProfile(name, title, nTimeBins, 0, maxTime);
             
             name = Form("hPsi2_Nch%d_etas%d", i, j);
             title = Form("Psi2 Distribution vs Tau (%d < N_{ch} < %d, %.1f < #eta_{s} < %.1f); #tau (fm/c); #Psi_{2}; Counts", 
@@ -477,13 +477,13 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         fillBinnedObservables(partonsByJet, partons, jets);
     }
     
-    // Compute RMS for each bin
-    for (int i = 0; i < trackbin; i++) {
-        for (int j = 0; j < etasbin; j++) {
-            computeRMSvsTau(hv2VsTau[i][j], hv2RMSvsTau[i][j]);
-            computeRMSvsTau(hEccVsTau[i][j], hEccRMSvsTau[i][j]);
-        }
-    }
+    // Compute RMS for each bin - COMMENTED OUT
+    // for (int i = 0; i < trackbin; i++) {
+    //     for (int j = 0; j < etasbin; j++) {
+    //         computeRMSvsTau(hv2VsTau[i][j], hv2RMSvsTau[i][j]);
+    //         computeRMSvsTau(hEccVsTau[i][j], hEccRMSvsTau[i][j]);
+    //     }
+    // }
     
     // Create output file based on input filename
     TString baseFileName = TString(inputFileName);
@@ -499,8 +499,8 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         for (int j = 0; j < etasbin; j++) {
             hv2VsTau[i][j]->Write();
             hEccVsTau[i][j]->Write();
-            hv2RMSvsTau[i][j]->Write();
-            hEccRMSvsTau[i][j]->Write();
+            // hv2RMSvsTau[i][j]->Write();  // COMMENTED OUT
+            // hEccRMSvsTau[i][j]->Write(); // COMMENTED OUT
         }
     }
     
