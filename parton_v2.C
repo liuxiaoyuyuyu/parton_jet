@@ -363,9 +363,8 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 // Calculate v2 by averaging over partons in this jet first, then average over jets
                 double sumv2 = 0;
                 int nPartonsForv2 = 0;
-                for (int idx : etaPartons) {
+                for (int idx : currentEtaPartons) {
                     const auto& P = partons[idx];
-                    if (P.tau >= tauTarget) continue;
                     
                     double phi_mom = atan2(P.jet_par_py, P.jet_par_px);
                     double v2 = cos(2 * (phi_mom - psi2));
