@@ -80,7 +80,7 @@ void plotBinnedHistograms(TFile* inFile, const char* histPattern, const char* pl
     }
 }
 
-void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/root/parton_v2_output_round3.root", 
+void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/root/parton_v2_output_round3_2.root", 
                    const vector<int>& etaBinsToPlot = {}) {
     
     // Set ROOT style
@@ -109,7 +109,7 @@ void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/r
     }
     
     // Create output PDF file path
-    TString pdfName = "/Users/xl155/Documents/wenbin/pdf/parton_v2_plots_round3.pdf";
+    TString pdfName = "/Users/xl155/Documents/wenbin/pdf/parton_v2_plots_round3_2.pdf";
     
     // Page 1: Global QA plots
     TCanvas *c1 = new TCanvas("c1", "Global QA Plots", 1200, 800);

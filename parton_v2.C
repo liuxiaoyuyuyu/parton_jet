@@ -270,7 +270,7 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     sumy += P.e * y_jetzt;
                 }
                 
-                if (sumE == 0) continue;
+                if (sumE < 1e-10) continue; // Use small tolerance instead of exact zero comparison
                 
                 double xm = sumx / sumE;
                 double ym = sumy / sumE;
@@ -295,7 +295,7 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     Wtot += w;
                 }
                 
-                if (Wtot == 0) continue;
+                if (Wtot < 1e-10) continue; // Use small tolerance instead of exact zero comparison
                 
                 double ecc = sqrt(Re * Re + Im * Im) / Wtot;
                 double psi2 = 0.5 * atan2(Im, Re);
@@ -314,7 +314,7 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     nPartonsForv2++;
                 }
                 
-                if (nPartonsForv2 > 0) {
+                if (nPartonsForv2 > 0) { // This comparison is fine since it's an integer
                     double avgv2 = sumv2 / nPartonsForv2; // Average over partons in this jet
                     hv2VsTau[multBin][etaBin]->Fill(tauTarget, avgv2); // Average over jets
                     
