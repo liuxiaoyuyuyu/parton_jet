@@ -240,6 +240,17 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 if (P.tau < tauTarget) nPartonsAtTau++;
             }
             
+            // Debug: Show individual parton tau values for first few jets when non-monotonic
+            static bool showedPartonTaus = false;
+            if (multBin == 0 && it <= 3 && !showedPartonTaus) {
+                cout << "    Parton tau values in this jet: ";
+                for (int idx : idxs) {
+                    cout << partons[idx].tau << " ";
+                }
+                cout << endl;
+                showedPartonTaus = true;
+            }
+            
             // Debug: Track parton counts for first few tau bins
             static int lastCount = 0;
             static int lastJet = -1;
