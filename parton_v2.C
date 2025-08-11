@@ -307,7 +307,9 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     hv2VsTau[multBin][etaBin]->Fill(tauCenter, avgv2); // Average over jets
                     
                     // Fill v2 vs eccentricity correlation at specific tau
-                    if (fabs(tauCenter - tauForv2vsEcc) < maxTime/nTimeBins/2) { // Check if we're at the target tau bin
+                    // Find the bin that contains tauForv2vsEcc
+                    int targetBin = (int)(tauForv2vsEcc / (maxTime / nTimeBins)) + 1;
+                    if (it == targetBin) {
                         hv2vsEcc[multBin][etaBin]->Fill(ecc, avgv2);
                     }
                 }
