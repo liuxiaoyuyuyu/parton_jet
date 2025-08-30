@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/huangxi/PC/sample.root", 
+void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/sample.root", 
                const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/") {
     
     // Open input file
@@ -234,9 +234,13 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         }
     }
     
-    // Create output file - use process ID for unique naming
-    int processId = gSystem->GetPid();
-    TString outputFileName = Form("%sparton_qa_job%d.root", outputDir, processId);
+    // Create output file based on input filename (same as parton_v2.C)
+    TString baseFileName = TString(inputFileName);
+    baseFileName.ReplaceAll(".root", "");
+    baseFileName.ReplaceAll("/", "_");
+    baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_xiaoyul_wenbin_sample_", "");
+    
+    TString outputFileName = Form("%sparton_qa_output_%s.root", outputDir, baseFileName.Data());
     TFile* outFile = new TFile(outputFileName, "RECREATE");
     
     // Write histograms
