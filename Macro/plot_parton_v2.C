@@ -80,7 +80,7 @@ void plotBinnedHistograms(TFile* inFile, const char* histPattern, const char* pl
     }
 }
 
-void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/root/parton_v2_output_round4.root", 
+void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/root/parton_v2_output_round5.root", 
                    const vector<int>& etaBinsToPlot = {}) {
     
     // Set ROOT style
@@ -109,7 +109,7 @@ void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/r
     }
     
     // Create output PDF file path
-    TString pdfName = "/Users/xl155/Documents/wenbin/pdf/parton_v2_plots_round4.pdf";
+    TString pdfName = "/Users/xl155/Documents/wenbin/pdf/parton_v2_plots_round5.pdf";
     
     // Page 1: Global QA plots
     TCanvas *c1 = new TCanvas("c1", "Global QA Plots", 1200, 800);
@@ -131,6 +131,7 @@ void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/r
         hNpartonVsTau->RebinX(tauRebinFactor);
         hNpartonVsTau->Draw();
         hNpartonVsTau->SetTitle("Nparton vs Tau");
+        hNpartonVsTau->GetYaxis()->SetRangeUser(0, 23);
     }
     
     c1->SaveAs(pdfName + "(");
@@ -157,10 +158,10 @@ void plot_parton_v2(const char* inputFileName = "/Users/xl155/Documents/wenbin/r
     
     // Pages 26-33: Nparton vs Tau
     plotBinnedHistograms(inFile, "hNpartonVsTau_Nch%d_etas%d", "Nparton vs Tau", "#tau (fm/c)", "<Nparton>", 
-                        tauRebinFactor, pdfName, true, false, true, 0.0, 0.0, etaBinsToPlot);
+                        tauRebinFactor, pdfName, true, false, true, 0.0, 23.0, etaBinsToPlot);
     
     // Pages 34-41: v2 vs Eccentricity correlation
-    plotBinnedHistograms(inFile, "hv2vsEcc_Nch%d_etas%d", "v2 vs Eccentricity", "#varepsilon_{2}", "v2", 
+    plotBinnedHistograms(inFile, "hv2vsEcc_Nch%d_etas%d", "v2 vs #varepsilon_{2} at #tau=3.0 fm/c", "#varepsilon_{2}", "v2", 
                         tauRebinFactor, pdfName, false, true, false, 0.0, 0.0, etaBinsToPlot);
     
     // Pages 42-49: Psi2 Distribution vs Tau
