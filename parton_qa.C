@@ -234,15 +234,9 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         }
     }
     
-    // Create output file
-    TString baseFileName = TString(inputFileName);
-    baseFileName = baseFileName(baseFileName.Last('/') + 1);
-    // Remove the .root extension
-    if (baseFileName.EndsWith(".root")) {
-        baseFileName = baseFileName(0, baseFileName.Length() - 5);
-    }
-    
-    TString outputFileName = Form("%sparton_qa_output_%s.root", outputDir, baseFileName.Data());
+    // Create output file - use process ID for unique naming
+    int processId = gSystem->GetPid();
+    TString outputFileName = Form("%sparton_qa_job%d.root", outputDir, processId);
     TFile* outFile = new TFile(outputFileName, "RECREATE");
     
     // Write histograms
