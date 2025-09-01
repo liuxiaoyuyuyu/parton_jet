@@ -109,25 +109,25 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     
     // Create histograms
     TH2D* hNchjVsNcollision = new TH2D("hNchjVsNcollision", "Leading Jet Charged Multiplicity vs Total Collisions; Total Collisions; N_{ch}^{jet}", 
-                                       50, 0, 100, 50, 0, 100);
+                                       20, 0, 20, 100, 0, 100);//x-axis is total collisions, y-axis is leading jet charged multiplicity
     
     TH2D* hNparVsNparticles = new TH2D("hNparVsNparticles", "Number of Partons vs Number of Particles; N_{particles}; N_{partons}", 
-                                       50, 0, 200, 50, 0, 200);
+                                       200, 0, 200, 200, 0, 200);//x-axis is number of particles, y-axis is number of partons, in an event.
     
     // For events with 0 collisions
-    TH2D* hPxBeforeVsAfter_0coll = new TH2D("hPxBeforeVsAfter_0coll", "Parton <p_{x}> Before vs After ZPC (0 collisions); <p_{x}> Before ZPC (GeV/c); <p_{x}> After ZPC (GeV/c)", 
+    TH2D* hPxBeforeVsAfter_0coll = new TH2D("hPxBeforeVsAfter_0coll", "Parton p_{x} Before vs After ZPC (0 collisions); p_{x} Before ZPC (GeV/c); p_{x} After ZPC (GeV/c)", 
                                             50, -10, 10, 50, -10, 10);
-    TH2D* hPyBeforeVsAfter_0coll = new TH2D("hPyBeforeVsAfter_0coll", "Parton <p_{y}> Before vs After ZPC (0 collisions); <p_{y}> Before ZPC (GeV/c); <p_{y}> After ZPC (GeV/c)", 
+    TH2D* hPyBeforeVsAfter_0coll = new TH2D("hPyBeforeVsAfter_0coll", "Parton p_{y} Before vs After ZPC (0 collisions); p_{y} Before ZPC (GeV/c); p_{y} After ZPC (GeV/c)", 
                                             50, -10, 10, 50, -10, 10);
-    TH2D* hPzBeforeVsAfter_0coll = new TH2D("hPzBeforeVsAfter_0coll", "Parton <p_{z}> Before vs After ZPC (0 collisions); <p_{z}> Before ZPC (GeV/c); <p_{z}> After ZPC (GeV/c)", 
+    TH2D* hPzBeforeVsAfter_0coll = new TH2D("hPzBeforeVsAfter_0coll", "Parton p_{z} Before vs After ZPC (0 collisions); p_{z} Before ZPC (GeV/c); p_{z} After ZPC (GeV/c)", 
                                             50, -50, 50, 50, -50, 50);
     
     // For events with nonzero collisions
-    TH2D* hPxBeforeVsAfter_ncoll = new TH2D("hPxBeforeVsAfter_ncoll", "Parton <p_{x}> Before vs After ZPC (nonzero collisions); <p_{x}> Before ZPC (GeV/c); <p_{x}> After ZPC (GeV/c)", 
+    TH2D* hPxBeforeVsAfter_ncoll = new TH2D("hPxBeforeVsAfter_ncoll", "Parton p_{x} Before vs After ZPC (nonzero collisions); p_{x} Before ZPC (GeV/c); p_{x} After ZPC (GeV/c)", 
                                             50, -10, 10, 50, -10, 10);
-    TH2D* hPyBeforeVsAfter_ncoll = new TH2D("hPyBeforeVsAfter_ncoll", "Parton <p_{y}> Before vs After ZPC (nonzero collisions); <p_{y}> Before ZPC (GeV/c); <p_{y}> After ZPC (GeV/c)", 
+    TH2D* hPyBeforeVsAfter_ncoll = new TH2D("hPyBeforeVsAfter_ncoll", "Parton p_{y} Before vs After ZPC (nonzero collisions); p_{y} Before ZPC (GeV/c); p_{y} After ZPC (GeV/c)", 
                                             50, -10, 10, 50, -10, 10);
-    TH2D* hPzBeforeVsAfter_ncoll = new TH2D("hPzBeforeVsAfter_ncoll", "Parton <p_{z}> Before vs After ZPC (nonzero collisions); <p_{z}> Before ZPC (GeV/c); <p_{z}> After ZPC (GeV/c)", 
+    TH2D* hPzBeforeVsAfter_ncoll = new TH2D("hPzBeforeVsAfter_ncoll", "Parton p_{z} Before vs After ZPC (nonzero collisions); p_{z} Before ZPC (GeV/c); p_{z} After ZPC (GeV/c)", 
                                             50, -50, 50, 50, -50, 50);
     
     // Event loop
@@ -196,41 +196,21 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         int Nparticles = b_px->size();
         hNparVsNparticles->Fill(Nparticles, Npar);
         
-        // Calculate average parton momenta before and after ZPC
-        double avgPxBefore = 0, avgPyBefore = 0, avgPzBefore = 0;
-        double avgPxAfter = 0, avgPyAfter = 0, avgPzAfter = 0;
-        
-        if (Npar > 0) {
-            for (size_t i = 0; i < b_par_pdgid->size(); i++) {
-                avgPxBefore += (*b_par_px)[i];
-                avgPyBefore += (*b_par_py)[i];
-                avgPzBefore += (*b_par_pz)[i];
-            }
-            avgPxBefore /= Npar;
-            avgPyBefore /= Npar;
-            avgPzBefore /= Npar;
-        }
-        
-        if (b_par_pdgid_after_zpc->size() > 0) {
-            for (size_t i = 0; i < b_par_pdgid_after_zpc->size(); i++) {
-                avgPxAfter += (*b_par_px_after_zpc)[i];
-                avgPyAfter += (*b_par_py_after_zpc)[i];
-                avgPzAfter += (*b_par_pz_after_zpc)[i];
-            }
-            avgPxAfter /= b_par_pdgid_after_zpc->size();
-            avgPyAfter /= b_par_pdgid_after_zpc->size();
-            avgPzAfter /= b_par_pdgid_after_zpc->size();
-        }
-        
-        // Fill momentum correlation plots based on collision count
+        // Fill momentum correlation plots per parton based on collision count
         if (b_total_collisions == 0) {
-            hPxBeforeVsAfter_0coll->Fill(avgPxBefore, avgPxAfter);
-            hPyBeforeVsAfter_0coll->Fill(avgPyBefore, avgPyAfter);
-            hPzBeforeVsAfter_0coll->Fill(avgPzBefore, avgPzAfter);
+            // Fill per parton for events with 0 collisions
+            for (size_t i = 0; i < b_par_pdgid->size(); i++) {
+                hPxBeforeVsAfter_0coll->Fill((*b_par_px)[i], (*b_par_px_after_zpc)[i]);
+                hPyBeforeVsAfter_0coll->Fill((*b_par_py)[i], (*b_par_py_after_zpc)[i]);
+                hPzBeforeVsAfter_0coll->Fill((*b_par_pz)[i], (*b_par_pz_after_zpc)[i]);
+            }
         } else {
-            hPxBeforeVsAfter_ncoll->Fill(avgPxBefore, avgPxAfter);
-            hPyBeforeVsAfter_ncoll->Fill(avgPyBefore, avgPyAfter);
-            hPzBeforeVsAfter_ncoll->Fill(avgPzBefore, avgPzAfter);
+            // Fill per parton for events with nonzero collisions
+            for (size_t i = 0; i < b_par_pdgid->size(); i++) {
+                hPxBeforeVsAfter_ncoll->Fill((*b_par_px)[i], (*b_par_px_after_zpc)[i]);
+                hPyBeforeVsAfter_ncoll->Fill((*b_par_py)[i], (*b_par_py_after_zpc)[i]);
+                hPzBeforeVsAfter_ncoll->Fill((*b_par_pz)[i], (*b_par_pz_after_zpc)[i]);
+            }
         }
     }
     
