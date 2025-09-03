@@ -11,6 +11,7 @@
 #include "TStyle.h"
 #include "TTreeReader.h"
 #include "TTreeReaderArray.h"
+#include "TTreeReaderValue.h"
 
 using namespace std;
 
@@ -31,97 +32,54 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         return;
     }
     
-    // Set up branch addresses
-    vector<int>* b_par_pdgid = nullptr;
-    vector<float>* b_par_px = nullptr;
-    vector<float>* b_par_py = nullptr;
-    vector<float>* b_par_pz = nullptr;
-    vector<float>* b_par_e = nullptr;
-    vector<float>* b_par_x = nullptr;
-    vector<float>* b_par_y = nullptr;
-    vector<float>* b_par_z = nullptr;
-    vector<float>* b_par_t = nullptr;
-    vector<int>* b_par_color1 = nullptr;
-    vector<int>* b_par_color2 = nullptr;
+    // Set up TTreeReader
+    TTreeReader reader(inTree);
     
-    vector<int>* b_par_pdgid_after_zpc = nullptr;
-    vector<float>* b_par_px_after_zpc = nullptr;
-    vector<float>* b_par_py_after_zpc = nullptr;
-    vector<float>* b_par_pz_after_zpc = nullptr;
-    vector<float>* b_par_e_after_zpc = nullptr;
-    vector<float>* b_par_x_after_zpc = nullptr;
-    vector<float>* b_par_y_after_zpc = nullptr;
-    vector<float>* b_par_z_after_zpc = nullptr;
-    vector<float>* b_par_t_after_zpc = nullptr;
-    vector<int>* b_par_color1_after_zpc = nullptr;
-    vector<int>* b_par_color2_after_zpc = nullptr;
+    // Set up TTreeReaderArrays for all branches
+    TTreeReaderArray<int> b_par_pdgid(reader, "par_pdgid");
+    TTreeReaderArray<float> b_par_px(reader, "par_px");
+    TTreeReaderArray<float> b_par_py(reader, "par_py");
+    TTreeReaderArray<float> b_par_pz(reader, "par_pz");
+    TTreeReaderArray<float> b_par_e(reader, "par_e");
+    TTreeReaderArray<float> b_par_x(reader, "par_x");
+    TTreeReaderArray<float> b_par_y(reader, "par_y");
+    TTreeReaderArray<float> b_par_z(reader, "par_z");
+    TTreeReaderArray<float> b_par_t(reader, "par_t");
+    TTreeReaderArray<int> b_par_color1(reader, "par_color1");
+    TTreeReaderArray<int> b_par_color2(reader, "par_color2");
     
-    int b_total_collisions = 0;
+    TTreeReaderArray<int> b_par_pdgid_after_zpc(reader, "par_pdgid_after_zpc");
+    TTreeReaderArray<float> b_par_px_after_zpc(reader, "par_px_after_zpc");
+    TTreeReaderArray<float> b_par_py_after_zpc(reader, "par_py_after_zpc");
+    TTreeReaderArray<float> b_par_pz_after_zpc(reader, "par_pz_after_zpc");
+    TTreeReaderArray<float> b_par_e_after_zpc(reader, "par_e_after_zpc");
+    TTreeReaderArray<float> b_par_x_after_zpc(reader, "par_x_after_zpc");
+    TTreeReaderArray<float> b_par_y_after_zpc(reader, "par_y_after_zpc");
+    TTreeReaderArray<float> b_par_z_after_zpc(reader, "par_z_after_zpc");
+    TTreeReaderArray<float> b_par_t_after_zpc(reader, "par_t_after_zpc");
+    TTreeReaderArray<int> b_par_color1_after_zpc(reader, "par_color1_after_zpc");
+    TTreeReaderArray<int> b_par_color2_after_zpc(reader, "par_color2_after_zpc");
     
-    vector<float>* b_px = nullptr;
-    vector<float>* b_py = nullptr;
-    vector<float>* b_pz = nullptr;
-    vector<float>* b_m = nullptr;
-    vector<int>* b_pid = nullptr;
-    vector<int>* b_chg = nullptr;
+    TTreeReaderValue<int> b_total_collisions(reader, "total_collisions");
     
-    vector<float>* b_genJetEta = nullptr;
-    vector<float>* b_genJetPt = nullptr;
-    vector<float>* b_genJetPhi = nullptr;
-        vector<int>* b_genJetChargedMultiplicity = nullptr;
+    TTreeReaderArray<float> b_px(reader, "px");
+    TTreeReaderArray<float> b_py(reader, "py");
+    TTreeReaderArray<float> b_pz(reader, "pz");
+    TTreeReaderArray<float> b_m(reader, "m");
+    TTreeReaderArray<int> b_pid(reader, "pid");
+    TTreeReaderArray<int> b_chg(reader, "chg");
+    
+    TTreeReaderArray<float> b_genJetEta(reader, "genJetEta");
+    TTreeReaderArray<float> b_genJetPt(reader, "genJetPt");
+    TTreeReaderArray<float> b_genJetPhi(reader, "genJetPhi");
+    TTreeReaderArray<int> b_genJetChargedMultiplicity(reader, "genJetChargedMultiplicity");
     
     // genDau branches for jet constituents
-    void* b_genDau_chg = nullptr;
-    void* b_genDau_pid = nullptr;
-    void* b_genDau_pt = nullptr;
-    void* b_genDau_eta = nullptr;
-    void* b_genDau_phi = nullptr;
-    
-    // Set branch addresses
-    inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
-    inTree->SetBranchAddress("par_px", &b_par_px);
-    inTree->SetBranchAddress("par_py", &b_par_py);
-    inTree->SetBranchAddress("par_pz", &b_par_pz);
-    inTree->SetBranchAddress("par_e", &b_par_e);
-    inTree->SetBranchAddress("par_x", &b_par_x);
-    inTree->SetBranchAddress("par_y", &b_par_y);
-    inTree->SetBranchAddress("par_z", &b_par_z);
-    inTree->SetBranchAddress("par_t", &b_par_t);
-    inTree->SetBranchAddress("par_color1", &b_par_color1);
-    inTree->SetBranchAddress("par_color2", &b_par_color2);
-    
-    inTree->SetBranchAddress("par_pdgid_after_zpc", &b_par_pdgid_after_zpc);
-    inTree->SetBranchAddress("par_px_after_zpc", &b_par_px_after_zpc);
-    inTree->SetBranchAddress("par_py_after_zpc", &b_par_py_after_zpc);
-    inTree->SetBranchAddress("par_pz_after_zpc", &b_par_pz_after_zpc);
-    inTree->SetBranchAddress("par_e_after_zpc", &b_par_e_after_zpc);
-    inTree->SetBranchAddress("par_x_after_zpc", &b_par_x_after_zpc);
-    inTree->SetBranchAddress("par_y_after_zpc", &b_par_y_after_zpc);
-    inTree->SetBranchAddress("par_z_after_zpc", &b_par_z_after_zpc);
-    inTree->SetBranchAddress("par_t_after_zpc", &b_par_t_after_zpc);
-    inTree->SetBranchAddress("par_color1_after_zpc", &b_par_color1_after_zpc);
-    inTree->SetBranchAddress("par_color2_after_zpc", &b_par_color2_after_zpc);
-    
-    inTree->SetBranchAddress("total_collisions", &b_total_collisions);
-    
-    inTree->SetBranchAddress("px", &b_px);
-    inTree->SetBranchAddress("py", &b_py);
-    inTree->SetBranchAddress("pz", &b_pz);
-    inTree->SetBranchAddress("m", &b_m);
-    inTree->SetBranchAddress("pid", &b_pid);
-    inTree->SetBranchAddress("chg", &b_chg);
-    
-    inTree->SetBranchAddress("genJetEta", &b_genJetEta);
-    inTree->SetBranchAddress("genJetPt", &b_genJetPt);
-    inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
-        inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMultiplicity);
-    
-    // Set branch addresses for genDau
-    inTree->SetBranchAddress("genDau_chg", &b_genDau_chg);
-    inTree->SetBranchAddress("genDau_pid", &b_genDau_pid);
-    inTree->SetBranchAddress("genDau_pt", &b_genDau_pt);
-    inTree->SetBranchAddress("genDau_eta", &b_genDau_eta);
-    inTree->SetBranchAddress("genDau_phi", &b_genDau_phi);
+    TTreeReaderArray<vector<int> > b_genDau_chg(reader, "genDau_chg");
+    TTreeReaderArray<vector<int> > b_genDau_pid(reader, "genDau_pid");
+    TTreeReaderArray<vector<float> > b_genDau_pt(reader, "genDau_pt");
+    TTreeReaderArray<vector<float> > b_genDau_eta(reader, "genDau_eta");
+    TTreeReaderArray<vector<float> > b_genDau_phi(reader, "genDau_phi");
     
     // Create histograms
     TH2D* hNchjVsNcollision = new TH2D("hNchjVsNcollision", "Leading Jet Charged Multiplicity vs Total Collisions; Total Collisions; N_{ch}^{jet}", 
@@ -158,44 +116,36 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     TH2D* hPzBeforeVsAfter_ncoll = new TH2D("hPzBeforeVsAfter_ncoll", "Parton p_{z} Before vs After ZPC (nonzero collisions); p_{z} Before ZPC (GeV/c); p_{z} After ZPC (GeV/c)", 
                                             50, -50, 50, 50, -50, 50);
     
-    // Event loop
+    // Event loop using TTreeReader
     Long64_t nEntries = inTree->GetEntries();
     cout << "Processing " << nEntries << " events..." << endl;
     
-    for (Long64_t ientry = 0; ientry < nEntries; ientry++) {
-        inTree->GetEntry(ientry);
-        
+    Long64_t ientry = 0;
+    while (reader.Next()) {
         if (ientry % 1000 == 0) {
             cout << "Processing event " << ientry << "/" << nEntries << endl;
         }
         
         // Check if we have jets
-        // Check if first jet (leading jet) meets criteria: |eta|<1.6, pt>550
-        if (b_genJetEta->size() == 0) continue;
+        if (b_genJetEta.GetSize() == 0) {
+            ientry++;
+            continue;
+        }
         
-        if (fabs((*b_genJetEta)[0]) >= 1.6 || (*b_genJetPt)[0] <= 550) continue;
+        // Check if first jet (leading jet) meets criteria: |eta|<1.6, pt>550
+        if (fabs(b_genJetEta[0]) >= 1.6 || b_genJetPt[0] <= 550) {
+            ientry++;
+            continue;
+        }
         
         // Calculate Nchj (jet charged multiplicity) for leading jet using genDau branches
         int Nchj = 0;
-        auto* genDau_chg = static_cast<vector<vector<int> >*>(b_genDau_chg);
-        auto* genDau_pt = static_cast<vector<vector<float> >*>(b_genDau_pt);
-        auto* genDau_eta = static_cast<vector<vector<float> >*>(b_genDau_eta);
-        
-        // Debug output
-        if (ientry < 5) { // Only print first 5 events
-            cout << "Event " << ientry << ": genDau_chg size = " << (genDau_chg ? genDau_chg->size() : -1) << endl;
-            if (genDau_chg && genDau_chg->size() > 0) {
-                cout << "  Leading jet constituents: " << (*genDau_chg)[0].size() << endl;
-                cout << "  Leading jet genJetChargedMultiplicity: " << (*b_genJetChargedMultiplicity)[0] << endl;
-            }
-        }
-        
-        if (genDau_chg && genDau_chg->size() > 0) {
-            for (size_t i = 0; i < (*genDau_chg)[0].size(); i++) {
+        if (b_genDau_chg.GetSize() > 0) {
+            for (size_t i = 0; i < b_genDau_chg[0].size(); i++) {
                 // Check if particle is charged
-                if ((*genDau_chg)[0][i] != 0) {
-                    float pt = (*genDau_pt)[0][i];
-                    float eta = (*genDau_eta)[0][i];
+                if (b_genDau_chg[0][i] != 0) {
+                    float pt = b_genDau_pt[0][i];
+                    float eta = b_genDau_eta[0][i];
                     
                     // Check pt and eta cuts
                     if (pt > 0.3 && fabs(eta) < 2.4) {
@@ -205,57 +155,56 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
             }
         }
         
-        // Debug output
+        // Debug output for first few events
         if (ientry < 5) {
-            cout << "  Calculated Nchj: " << Nchj << endl;
-        }
-        
-        // Fallback: if genDau approach gives zero, use the existing branch
-        if (Nchj == 0 && b_genJetChargedMultiplicity->size() > 0) {
-            Nchj = (*b_genJetChargedMultiplicity)[0];
-            if (ientry < 5) {
-                cout << "  Using fallback Nchj: " << Nchj << endl;
+            cout << "Event " << ientry << ": genDau_chg size = " << b_genDau_chg.GetSize() << endl;
+            if (b_genDau_chg.GetSize() > 0) {
+                cout << "  Leading jet constituents: " << b_genDau_chg[0].size() << endl;
+                cout << "  Leading jet genJetChargedMultiplicity: " << b_genJetChargedMultiplicity[0] << endl;
+                cout << "  Calculated Nchj: " << Nchj << endl;
             }
         }
         
         // Fill Nchj vs Ncollision
-        hNchjVsNcollision->Fill(b_total_collisions, Nchj);
+        hNchjVsNcollision->Fill(*b_total_collisions, Nchj);
         
         // Fill Npar vs Nparticles
-        int Npar = b_par_pdgid->size();
-        int Nparticles = b_px->size();
+        int Npar = b_par_pdgid.GetSize();
+        int Nparticles = b_px.GetSize();
         hNparVsNparticles->Fill(Nparticles, Npar);
         
         // Fill Np vs leading jet multiplicity (first jet entry is leading jet)
         hNpVsLeadingJetMult->Fill(Nchj, Npar);
         
         // Fill genJet distributions
-        for (size_t i = 0; i < b_genJetEta->size(); i++) {
-            hGenJetPt->Fill((*b_genJetPt)[i]);
-            hGenJetEta->Fill((*b_genJetEta)[i]);
-            hGenJetPhi->Fill((*b_genJetPhi)[i]);
-            hGenJetChargedMultiplicity->Fill((*b_genJetChargedMultiplicity)[i]);
+        for (size_t i = 0; i < b_genJetEta.GetSize(); i++) {
+            hGenJetPt->Fill(b_genJetPt[i]);
+            hGenJetEta->Fill(b_genJetEta[i]);
+            hGenJetPhi->Fill(b_genJetPhi[i]);
+            hGenJetChargedMultiplicity->Fill(b_genJetChargedMultiplicity[i]);
         }
         
         // Fill total collisions distribution
-        hTotalCollisions->Fill(b_total_collisions);
+        hTotalCollisions->Fill(*b_total_collisions);
         
         // Fill momentum correlation plots per parton based on collision count
-        if (b_total_collisions == 0) {
+        if (*b_total_collisions == 0) {
             // Fill per parton for events with 0 collisions
-            for (size_t i = 0; i < b_par_pdgid->size(); i++) {
-                hPxBeforeVsAfter_0coll->Fill((*b_par_px)[i], (*b_par_px_after_zpc)[i]);
-                hPyBeforeVsAfter_0coll->Fill((*b_par_py)[i], (*b_par_py_after_zpc)[i]);
-                hPzBeforeVsAfter_0coll->Fill((*b_par_pz)[i], (*b_par_pz_after_zpc)[i]);
+            for (size_t i = 0; i < b_par_pdgid.GetSize(); i++) {
+                hPxBeforeVsAfter_0coll->Fill(b_par_px[i], b_par_px_after_zpc[i]);
+                hPyBeforeVsAfter_0coll->Fill(b_par_py[i], b_par_py_after_zpc[i]);
+                hPzBeforeVsAfter_0coll->Fill(b_par_pz[i], b_par_pz_after_zpc[i]);
             }
         } else {
             // Fill per parton for events with nonzero collisions
-            for (size_t i = 0; i < b_par_pdgid->size(); i++) {
-                hPxBeforeVsAfter_ncoll->Fill((*b_par_px)[i], (*b_par_px_after_zpc)[i]);
-                hPyBeforeVsAfter_ncoll->Fill((*b_par_py)[i], (*b_par_py_after_zpc)[i]);
-                hPzBeforeVsAfter_ncoll->Fill((*b_par_pz)[i], (*b_par_pz_after_zpc)[i]);
+            for (size_t i = 0; i < b_par_pdgid.GetSize(); i++) {
+                hPxBeforeVsAfter_ncoll->Fill(b_par_px[i], b_par_px_after_zpc[i]);
+                hPyBeforeVsAfter_ncoll->Fill(b_par_py[i], b_par_py_after_zpc[i]);
+                hPzBeforeVsAfter_ncoll->Fill(b_par_pz[i], b_par_pz_after_zpc[i]);
             }
         }
+        
+        ientry++;
     }
     
     // Create output file based on input filename (same as parton_v2.C)
