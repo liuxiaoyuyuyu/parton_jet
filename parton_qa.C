@@ -68,6 +68,13 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     vector<float>* b_genJetPhi = nullptr;
     vector<int>* b_genJetChargedMultiplicity = nullptr;
     
+    // genDau branches for jet constituents
+    vector<vector<int> >* b_genDau_chg = nullptr;
+    vector<vector<int> >* b_genDau_pid = nullptr;
+    vector<vector<float> >* b_genDau_pt = nullptr;
+    vector<vector<float> >* b_genDau_eta = nullptr;
+    vector<vector<float> >* b_genDau_phi = nullptr;
+    
     // Set branch addresses
     inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
     inTree->SetBranchAddress("par_px", &b_par_px);
@@ -106,6 +113,13 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     inTree->SetBranchAddress("genJetPt", &b_genJetPt);
     inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
     inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMultiplicity);
+    
+    // Set branch addresses for genDau
+    inTree->SetBranchAddress("genDau_chg", &b_genDau_chg);
+    inTree->SetBranchAddress("genDau_pid", &b_genDau_pid);
+    inTree->SetBranchAddress("genDau_pt", &b_genDau_pt);
+    inTree->SetBranchAddress("genDau_eta", &b_genDau_eta);
+    inTree->SetBranchAddress("genDau_phi", &b_genDau_phi);
     
     // Create histograms
     TH2D* hNchjVsNcollision = new TH2D("hNchjVsNcollision", "Leading Jet Charged Multiplicity vs Total Collisions; Total Collisions; N_{ch}^{jet}", 
@@ -159,17 +173,19 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         
         if (fabs((*b_genJetEta)[0]) >= 1.6 || (*b_genJetPt)[0] <= 550) continue;
         
-        // Calculate Nchj (jet charged multiplicity) for leading jet
+        // Calculate Nchj (jet charged multiplicity) for leading jet using genDau branches
         int Nchj = 0;
-        for (size_t i = 0; i < b_px->size(); i++) {
-            // Check if particle is charged
-            if ((*b_chg)[i] != 0) {
-                float pt = sqrt((*b_px)[i] * (*b_px)[i] + (*b_py)[i] * (*b_py)[i]);
-                float eta = -log(tan(atan2(pt, (*b_pz)[i]) / 2.0));
-                
-                // Check pt and eta cuts only
-                if (pt > 0.3 && fabs(eta) < 2.4) {
-                    Nchj++;
+        if (b_genDau_chg->size() > 0) {
+            for (size_t i = 0; i < (*b_genDau_chg)[0].size(); i++) {
+                // Check if particle is charged
+                if ((*b_genDau_chg)[0][i] != 0) {
+                    float pt = (*b_genDau_pt)[0][i];
+                    float eta = (*b_genDau_eta)[0][i];
+                    
+                    // Check pt and eta cuts
+                    if (pt > 0.3 && fabs(eta) < 2.4) {
+                        Nchj++;
+                    }
                 }
             }
         }
