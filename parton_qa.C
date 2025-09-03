@@ -14,7 +14,7 @@
 
 using namespace std;
 
-void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/sample.root", 
+void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/batch2/pp_parton_cascade_19607.root", 
                const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/") {
     
     // Open input file
@@ -181,6 +181,15 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         auto* genDau_pt = static_cast<vector<vector<float> >*>(b_genDau_pt);
         auto* genDau_eta = static_cast<vector<vector<float> >*>(b_genDau_eta);
         
+        // Debug output
+        if (ientry < 5) { // Only print first 5 events
+            cout << "Event " << ientry << ": genDau_chg size = " << (genDau_chg ? genDau_chg->size() : -1) << endl;
+            if (genDau_chg && genDau_chg->size() > 0) {
+                cout << "  Leading jet constituents: " << (*genDau_chg)[0].size() << endl;
+                cout << "  Leading jet genJetChargedMultiplicity: " << (*b_genJetChargedMultiplicity)[0] << endl;
+            }
+        }
+        
         if (genDau_chg && genDau_chg->size() > 0) {
             for (size_t i = 0; i < (*genDau_chg)[0].size(); i++) {
                 // Check if particle is charged
@@ -193,6 +202,19 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
                         Nchj++;
                     }
                 }
+            }
+        }
+        
+        // Debug output
+        if (ientry < 5) {
+            cout << "  Calculated Nchj: " << Nchj << endl;
+        }
+        
+        // Fallback: if genDau approach gives zero, use the existing branch
+        if (Nchj == 0 && b_genJetChargedMultiplicity->size() > 0) {
+            Nchj = (*b_genJetChargedMultiplicity)[0];
+            if (ientry < 5) {
+                cout << "  Using fallback Nchj: " << Nchj << endl;
             }
         }
         
