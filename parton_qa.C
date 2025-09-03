@@ -112,7 +112,19 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
                                        20, 0, 20, 100, 0, 100);//x-axis is total collisions, y-axis is leading jet charged multiplicity
     
     TH2D* hNparVsNparticles = new TH2D("hNparVsNparticles", "Number of Partons vs Number of Particles; N_{particles}; N_{partons}", 
-                                       200, 0, 200, 200, 0, 200);//x-axis is number of particles, y-axis is number of partons, in an event.
+                                       600, 0, 600, 200, 0, 200);//x-axis is number of particles, y-axis is number of partons, in an event.
+    
+    // genJet distributions
+    TH1D* hGenJetPt = new TH1D("hGenJetPt", "GenJet p_{T} Distribution; p_{T} (GeV/c); Counts", 100, 0, 1000);
+    TH1D* hGenJetEta = new TH1D("hGenJetEta", "GenJet #eta Distribution; #eta; Counts", 100, -3, 3);
+    TH1D* hGenJetPhi = new TH1D("hGenJetPhi", "GenJet #phi Distribution; #phi; Counts", 100, -TMath::Pi(), TMath::Pi());
+    TH1D* hGenJetChargedMultiplicity = new TH1D("hGenJetChargedMultiplicity", "GenJet Charged Multiplicity Distribution; N_{ch}; Counts", 100, 0, 100);
+    
+    // Total collisions distribution
+    TH1D* hTotalCollisions = new TH1D("hTotalCollisions", "Total Collisions Distribution; N_{collisions}; Counts", 50, 0, 50);
+    
+    // Np vs leading jet multiplicity
+    TH2D* hNpVsLeadingJetMult = new TH2D("hNpVsLeadingJetMult", "Number of Partons vs Leading Jet Multiplicity; Leading Jet Multiplicity; N_{partons}", 100, 0, 100, 200, 0, 200);
     
     // For events with 0 collisions
     TH2D* hPxBeforeVsAfter_0coll = new TH2D("hPxBeforeVsAfter_0coll", "Parton p_{x} Before vs After ZPC (0 collisions); p_{x} Before ZPC (GeV/c); p_{x} After ZPC (GeV/c)", 
@@ -142,23 +154,10 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         }
         
         // Check if we have jets
+        // Check if first jet (leading jet) meets criteria: |eta|<1.6, pt>550
         if (b_genJetEta->size() == 0) continue;
         
-        // Find leading jet that meets criteria: |eta|<1.6, pt>550
-        int leadingJetIdx = -1;
-        float maxPt = 0;
-        
-        for (size_t i = 0; i < b_genJetEta->size(); i++) {
-            if (fabs((*b_genJetEta)[i]) < 1.6 && (*b_genJetPt)[i] > 550) {
-                if ((*b_genJetPt)[i] > maxPt) {
-                    maxPt = (*b_genJetPt)[i];
-                    leadingJetIdx = i;
-                }
-            }
-        }
-        
-        // Skip if no qualifying jet found
-        if (leadingJetIdx == -1) continue;
+        if (fabs((*b_genJetEta)[0]) >= 1.6 || (*b_genJetPt)[0] <= 550) continue;
         
         // Calculate Nchj (jet charged multiplicity) for leading jet
         int Nchj = 0;
@@ -168,22 +167,9 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
                 float pt = sqrt((*b_px)[i] * (*b_px)[i] + (*b_py)[i] * (*b_py)[i]);
                 float eta = -log(tan(atan2(pt, (*b_pz)[i]) / 2.0));
                 
-                // Check pt and eta cuts
+                // Check pt and eta cuts only
                 if (pt > 0.3 && fabs(eta) < 2.4) {
-                    // Check if particle belongs to leading jet (simple deltaR cut)
-                    float jetEta = (*b_genJetEta)[leadingJetIdx];
-                    float jetPhi = (*b_genJetPhi)[leadingJetIdx];
-                    float partPhi = atan2((*b_py)[i], (*b_px)[i]);
-                    
-                    float deltaEta = eta - jetEta;
-                    float deltaPhi = partPhi - jetPhi;
-                    if (deltaPhi > TMath::Pi()) deltaPhi -= 2 * TMath::Pi();
-                    if (deltaPhi < -TMath::Pi()) deltaPhi += 2 * TMath::Pi();
-                    
-                    float deltaR = sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
-                    if (deltaR < 0.4) { // R=0.4 jet cone
-                        Nchj++;
-                    }
+                    Nchj++;
                 }
             }
         }
@@ -195,6 +181,20 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         int Npar = b_par_pdgid->size();
         int Nparticles = b_px->size();
         hNparVsNparticles->Fill(Nparticles, Npar);
+        
+        // Fill Np vs leading jet multiplicity (first jet entry is leading jet)
+        hNpVsLeadingJetMult->Fill(Nchj, Npar);
+        
+        // Fill genJet distributions
+        for (size_t i = 0; i < b_genJetEta->size(); i++) {
+            hGenJetPt->Fill((*b_genJetPt)[i]);
+            hGenJetEta->Fill((*b_genJetEta)[i]);
+            hGenJetPhi->Fill((*b_genJetPhi)[i]);
+            hGenJetChargedMultiplicity->Fill((*b_genJetChargedMultiplicity)[i]);
+        }
+        
+        // Fill total collisions distribution
+        hTotalCollisions->Fill(b_total_collisions);
         
         // Fill momentum correlation plots per parton based on collision count
         if (b_total_collisions == 0) {
@@ -226,6 +226,19 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     // Write histograms
     hNchjVsNcollision->Write();
     hNparVsNparticles->Write();
+    
+    // Write Np vs leading jet multiplicity
+    hNpVsLeadingJetMult->Write();
+    
+    // Write genJet distributions
+    hGenJetPt->Write();
+    hGenJetEta->Write();
+    hGenJetPhi->Write();
+    hGenJetChargedMultiplicity->Write();
+    
+    // Write total collisions distribution
+    hTotalCollisions->Write();
+    
     hPxBeforeVsAfter_0coll->Write();
     hPyBeforeVsAfter_0coll->Write();
     hPzBeforeVsAfter_0coll->Write();
