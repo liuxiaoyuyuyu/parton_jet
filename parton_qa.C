@@ -9,6 +9,8 @@
 #include "TH2F.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TTreeReader.h"
+#include "TTreeReaderArray.h"
 
 using namespace std;
 
@@ -66,14 +68,14 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     vector<float>* b_genJetEta = nullptr;
     vector<float>* b_genJetPt = nullptr;
     vector<float>* b_genJetPhi = nullptr;
-    vector<int>* b_genJetChargedMultiplicity = nullptr;
+        vector<int>* b_genJetChargedMultiplicity = nullptr;
     
     // genDau branches for jet constituents
-    vector<vector<int> >* b_genDau_chg = nullptr;
-    vector<vector<int> >* b_genDau_pid = nullptr;
-    vector<vector<float> >* b_genDau_pt = nullptr;
-    vector<vector<float> >* b_genDau_eta = nullptr;
-    vector<vector<float> >* b_genDau_phi = nullptr;
+    void* b_genDau_chg = nullptr;
+    void* b_genDau_pid = nullptr;
+    void* b_genDau_pt = nullptr;
+    void* b_genDau_eta = nullptr;
+    void* b_genDau_phi = nullptr;
     
     // Set branch addresses
     inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
@@ -112,7 +114,7 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     inTree->SetBranchAddress("genJetEta", &b_genJetEta);
     inTree->SetBranchAddress("genJetPt", &b_genJetPt);
     inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
-    inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMultiplicity);
+        inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMultiplicity);
     
     // Set branch addresses for genDau
     inTree->SetBranchAddress("genDau_chg", &b_genDau_chg);
@@ -175,12 +177,16 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         
         // Calculate Nchj (jet charged multiplicity) for leading jet using genDau branches
         int Nchj = 0;
-        if (b_genDau_chg->size() > 0) {
-            for (size_t i = 0; i < (*b_genDau_chg)[0].size(); i++) {
+        auto* genDau_chg = static_cast<vector<vector<int> >*>(b_genDau_chg);
+        auto* genDau_pt = static_cast<vector<vector<float> >*>(b_genDau_pt);
+        auto* genDau_eta = static_cast<vector<vector<float> >*>(b_genDau_eta);
+        
+        if (genDau_chg && genDau_chg->size() > 0) {
+            for (size_t i = 0; i < (*genDau_chg)[0].size(); i++) {
                 // Check if particle is charged
-                if ((*b_genDau_chg)[0][i] != 0) {
-                    float pt = (*b_genDau_pt)[0][i];
-                    float eta = (*b_genDau_eta)[0][i];
+                if ((*genDau_chg)[0][i] != 0) {
+                    float pt = (*genDau_pt)[0][i];
+                    float eta = (*genDau_eta)[0][i];
                     
                     // Check pt and eta cuts
                     if (pt > 0.3 && fabs(eta) < 2.4) {
