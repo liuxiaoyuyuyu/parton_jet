@@ -100,6 +100,9 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     // Np vs leading jet multiplicity
     TH2D* hNpVsLeadingJetMult = new TH2D("hNpVsLeadingJetMult", "Number of Partons vs Leading Jet Multiplicity; Leading Jet Multiplicity; N_{partons}", 100, 0, 100, 200, 0, 200);
     
+    // Event multiplicity vs leading jet Nchj
+    TH2D* hEventMultVsLeadingJetNchj = new TH2D("hEventMultVsLeadingJetNchj", "Event Multiplicity vs Leading Jet N_{ch}^{jet}; Leading Jet N_{ch}^{jet}; Event Multiplicity", 100, 0, 100, 600, 0, 600);
+    
     // For events with 0 collisions
     TH2D* hPxBeforeVsAfter_0coll = new TH2D("hPxBeforeVsAfter_0coll", "Parton p_{x} Before vs After ZPC (0 collisions); p_{x} Before ZPC (GeV/c); p_{x} After ZPC (GeV/c)", 
                                             50, -10, 10, 50, -10, 10);
@@ -176,6 +179,9 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         // Fill Np vs leading jet multiplicity (first jet entry is leading jet)
         hNpVsLeadingJetMult->Fill(Nchj, Npar);
         
+        // Fill event multiplicity vs leading jet Nchj
+        hEventMultVsLeadingJetNchj->Fill(Nchj, Nparticles);
+        
         // Fill genJet distributions
         for (size_t i = 0; i < b_genJetEta.GetSize(); i++) {
             hGenJetPt->Fill(b_genJetPt[i]);
@@ -222,6 +228,9 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     
     // Write Np vs leading jet multiplicity
     hNpVsLeadingJetMult->Write();
+    
+    // Write event multiplicity vs leading jet Nchj
+    hEventMultVsLeadingJetNchj->Write();
     
     // Write genJet distributions
     hGenJetPt->Write();
