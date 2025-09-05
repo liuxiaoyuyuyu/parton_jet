@@ -30,7 +30,9 @@ def create_condor_jobs_batch(list_dir, analysis_type="qa", output_sub_file=None)
     for filename in os.listdir(list_dir):
         file_path = os.path.join(list_dir, filename)
         if os.path.isfile(file_path) and not filename.startswith('.'):
-            list_files.append(file_path)
+            # Convert to absolute path for Condor jobs
+            abs_path = os.path.abspath(file_path)
+            list_files.append(abs_path)
     
     list_files.sort()  # Sort for consistent ordering
     
@@ -76,7 +78,7 @@ def create_condor_jobs_single(filelist_path, analysis_type="qa", output_sub_file
     # Check if it's a single .root file or a file list
     if filelist_path.endswith('.root'):
         # Single .root file
-        files = [filelist_path]
+        files = [os.path.abspath(filelist_path)]
         print(f"Processing single .root file: {filelist_path}")
     else:
         # Read the file list
