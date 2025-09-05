@@ -61,7 +61,7 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     
     // Create histograms (same as before)
     TH2D* hNchjVsNcollision = new TH2D("hNchjVsNcollision", "Leading Jet Charged Multiplicity vs Total Collisions; Total Collisions; N_{ch}^{jet}", 
-                                       20, 0, 20, 100, 0, 100);
+                                       200, 0, 200, 100, 0, 100);
     
     TH2D* hNparVsNparticles = new TH2D("hNparVsNparticles", "Number of Partons vs Number of Particles; N_{particles}; N_{partons}", 
                                        600, 0, 600, 200, 0, 200);
@@ -73,7 +73,7 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     TH1D* hGenJetChargedMultiplicity = new TH1D("hGenJetChargedMultiplicity", "GenJet Charged Multiplicity Distribution; N_{ch}; Counts", 100, 0, 100);
     
     // Total collisions distribution
-    TH1D* hTotalCollisions = new TH1D("hTotalCollisions", "Total Collisions Distribution; N_{collisions}; Counts", 50, 0, 50);
+    TH1D* hTotalCollisions = new TH1D("hTotalCollisions", "Total Collisions Distribution; N_{collisions}; Counts", 200, 0, 200);
     
     // Np vs leading jet multiplicity
     TH2D* hNpVsLeadingJetMult = new TH2D("hNpVsLeadingJetMult", "Number of Partons vs Leading Jet Multiplicity; Leading Jet Multiplicity; N_{partons}", 100, 0, 100, 200, 0, 200);
