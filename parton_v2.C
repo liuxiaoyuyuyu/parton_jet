@@ -538,24 +538,12 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     
 
     
-    // Create output file based on input filename
-    TString baseFileName;
-    if (inputStr.EndsWith(".root")) {
-        // For single files, use the original logic
-        baseFileName = TString(inputFileName);
-        baseFileName.ReplaceAll(".root", "");
-        baseFileName.ReplaceAll("/", "_");
-        baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_huangxi_PC_", "");
-    } else {
-        // For file lists, use the list name (remove extension if any)
-        baseFileName = TString(inputFileName);
-        baseFileName = baseFileName(baseFileName.Last('/') + 1);
-        // Remove common extensions
-        baseFileName.ReplaceAll(".txt", "");
-        baseFileName.ReplaceAll(".list", "");
+    // Create output file with Condor process ID
+    TString processId = gSystem->Getenv("CONDOR_PROCESS_ID");
+    if (processId.IsNull()) {
+        processId = "0"; // fallback if not in Condor
     }
-    
-    TString outputFileName = Form("%sparton_v2_output_%s.root", outputDir, baseFileName.Data());
+    TString outputFileName = Form("%sparton_v2_output_%s.root", outputDir, processId.Data());
     TFile* outFile = TFile::Open(outputFileName, "RECREATE");
     
     // Write histograms
