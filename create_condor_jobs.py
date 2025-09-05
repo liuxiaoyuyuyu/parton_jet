@@ -17,17 +17,8 @@ def create_condor_jobs_batch(list_dir, analysis_type="qa", output_sub_file=None)
         print(f"Error: Directory {list_dir} not found")
         return
     
-    if analysis_type == "qa":
-        executable = "exec.sh"
-        log_prefix = "condor_qa"
-        transfer_files = "parton_qa.C"
-    elif analysis_type == "v2":
-        executable = "exec.sh"
-        log_prefix = "condor_v2"
-        transfer_files = "parton_v2.C, coordinateTools.h, binning.h"
-    else:
-        print(f"Error: Unknown analysis type {analysis_type}. Use 'qa' or 'v2'")
-        return
+    # Transfer all necessary files for both analysis types
+    transfer_files = "parton_qa.C, parton_v2.C, coordinateTools.h, binning.h"
     
     if output_sub_file is None:
         output_sub_file = f"condor_{analysis_type}.sub"
@@ -58,9 +49,9 @@ def create_condor_jobs_batch(list_dir, analysis_type="qa", output_sub_file=None)
         
         f.write("# Transfer_Output_Files = parton_qa_$(Process).root\n\n")
         
-        # Add Arguments for each list file
+        # Add Arguments for each list file with analysis type
         for i, list_file in enumerate(list_files):
-            f.write(f"Arguments_{i} = \"{list_file}\"\n")
+            f.write(f"Arguments_{i} = \"{list_file} {analysis_type}\"\n")
         
         f.write("\nArguments = $(Arguments_$(Process))\n")
         f.write(f"Queue {len(list_files)}\n")
@@ -91,14 +82,8 @@ def create_condor_jobs_single(filelist_path, analysis_type="qa", output_sub_file
             files = [line.strip() for line in f if line.strip()]
         print(f"Found {len(files)} files to process from list: {filelist_path}")
     
-    # Determine transfer files based on analysis type
-    if analysis_type == "qa":
-        transfer_files = "parton_qa.C"
-    elif analysis_type == "v2":
-        transfer_files = "parton_v2.C, coordinateTools.h, binning.h"
-    else:
-        print(f"Error: Unknown analysis type {analysis_type}")
-        return
+    # Transfer all necessary files for both analysis types
+    transfer_files = "parton_qa.C, parton_v2.C, coordinateTools.h, binning.h"
     
     # Create the condor submission file
     with open(output_sub_file, 'w') as f:
@@ -113,11 +98,11 @@ def create_condor_jobs_single(filelist_path, analysis_type="qa", output_sub_file
         f.write("Log              = logs/condor_$(Process).log\n")
         f.write("Output           = logs/condor_$(Process).out\n")
         f.write("Error            = logs/condor_$(Process).err\n")
-        f.write("+MaxRuntime =1800\n\n")
+        f.write("+MaxRuntime = 20000\n\n")
         
-        # Add Arguments for each file
+        # Add Arguments for each file with analysis type
         for i, filename in enumerate(files):
-            f.write(f"Arguments_{i} = \"{filename}\"\n")
+            f.write(f"Arguments_{i} = \"{filename} {analysis_type}\"\n")
         
         f.write("\nArguments = $(Arguments_$(Process))\n")
         f.write(f"Queue {len(files)}\n")

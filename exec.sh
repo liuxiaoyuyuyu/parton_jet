@@ -1,37 +1,44 @@
 #!/bin/bash
 
-# Check if argument is provided
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <file_or_filelist>"
-    echo "Example: $0 /path/to/single_file.root"
-    echo "Example: $0 /path/to/filelist.txt"
+# Check if arguments are provided
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    echo "Usage: $0 <file_or_filelist> [analysis_type]"
+    echo "Example: $0 /path/to/single_file.root qa"
+    echo "Example: $0 /path/to/filelist.txt v2"
+    echo "Example: $0 /path/to/single_file.root (defaults to v2 for single files)"
     exit 1
 fi
 
 INPUT="$1"
+ANALYSIS_TYPE="$2"
 
-# Check if input is a file list (ends with .txt) or a single file
-if [[ "$INPUT" == *.txt ]]; then
-    echo "Processing file list: $INPUT"
-    # Check if file list exists
-    if [ ! -f "$INPUT" ]; then
-        echo "Error: File list $INPUT not found"
-        exit 1
+# Check if input file exists
+if [ ! -f "$INPUT" ]; then
+    echo "Error: Input file $INPUT not found"
+    exit 1
+fi
+
+# Determine analysis type
+if [ -z "$ANALYSIS_TYPE" ]; then
+    # Default analysis type based on file type
+    if [[ "$INPUT" == *.root ]]; then
+        ANALYSIS_TYPE="v2"  # Default to v2 for single .root files
+    else
+        ANALYSIS_TYPE="qa"  # Default to qa for file lists
     fi
-    
-    # Determine analysis type based on the condor job name or other logic
-    # For now, default to QA analysis for file lists
-    echo "Running QA analysis on file list"
+fi
+
+echo "Processing: $INPUT"
+echo "Analysis type: $ANALYSIS_TYPE"
+
+# Run the appropriate analysis
+if [ "$ANALYSIS_TYPE" = "qa" ]; then
+    echo "Running QA analysis"
     root -l -b -q "parton_qa.C(\"$INPUT\", \"/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/\")"
-else
-    echo "Processing single file: $INPUT"
-    # Check if file exists
-    if [ ! -f "$INPUT" ]; then
-        echo "Error: File $INPUT not found"
-        exit 1
-    fi
-    
-    # For single files, run v2 analysis (original behavior)
-    echo "Running v2 analysis on single file"
+elif [ "$ANALYSIS_TYPE" = "v2" ]; then
+    echo "Running v2 analysis"
     root -l -b -q "parton_v2.C(\"$INPUT\", \"/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/round5/\")"
+else
+    echo "Error: Unknown analysis type '$ANALYSIS_TYPE'. Use 'qa' or 'v2'"
+    exit 1
 fi

@@ -24,23 +24,23 @@ find /eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/ -name "*batch5*"
 
 mkdir -p Model_tree_list/list_25/
 cd Model_tree_list/list_25/
-split -l25 -d -a 3 ../../Treelist_zpc list_job
+split -l25 -d -a 3 ../../Treelist_zpc.list list_job
 ```
 
 ### 2. Generate Condor Jobs
 
 ```bash
 # Batch processing (multiple files per job)
-python create_condor_jobs.py Model_tree_list/list_25/ qa batch
-python create_condor_jobs.py Model_tree_list/list_25/ v2 batch
+python3 create_condor_jobs.py ./Model_tree_list/list_25/ qa batch
+python3 create_condor_jobs.py ./Model_tree_list/list_25/ v2 batch
 
 # Single file processing (one file per job)
-python create_condor_jobs.py filelist.txt qa single
-python create_condor_jobs.py filelist.txt v2 single
+python3 create_condor_jobs.py ./filelist.txt qa single
+python3 create_condor_jobs.py ./filelist.txt v2 single
 
 # Quick testing with single .root file
-python create_condor_jobs.py test.root qa single
-python create_condor_jobs.py test.root v2 single
+python3 create_condor_jobs.py test.root qa single
+python3 create_condor_jobs.py test.root v2 single
 ```
 
 ### 3. Submit Jobs
