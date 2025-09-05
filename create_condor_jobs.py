@@ -55,7 +55,7 @@ def create_condor_jobs_batch(list_dir, analysis_type="qa", output_sub_file=None)
         
         # Add Arguments for each list file with analysis type
         for i, list_file in enumerate(list_files):
-            f.write(f"Arguments_{i} = \"{list_file} {analysis_type}\"\n")
+            f.write(f"Arguments_{i} = \"{list_file} {analysis_type} {i}\"\n")
         
         f.write("\nArguments = $(Arguments_$(Process))\n")
         f.write(f"Queue {len(list_files)}\n")
@@ -107,7 +107,7 @@ def create_condor_jobs_single(filelist_path, analysis_type="qa", output_sub_file
         
         # Add Arguments for each file with analysis type
         for i, filename in enumerate(files):
-            f.write(f"Arguments_{i} = \"{filename} {analysis_type}\"\n")
+            f.write(f"Arguments_{i} = \"{filename} {analysis_type} {i}\"\n")
         
         f.write("\nArguments = $(Arguments_$(Process))\n")
         f.write(f"Queue {len(files)}\n")

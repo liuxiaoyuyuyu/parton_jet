@@ -342,7 +342,7 @@ void computeRMSvsTau(TProfile* hInput, TH1D* hRMS) {
 }
 
 void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/huangxi/PC/pp_parton_cascade_0.root", 
-               const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/") {
+               const char* outputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/parton_v2_output.root") {
     // Initialize histograms
     initializeHistograms();
     
@@ -538,12 +538,7 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     
 
     
-    // Create output file with Condor process ID
-    TString processId = gSystem->Getenv("CONDOR_PROCESS_ID");
-    if (processId.IsNull()) {
-        processId = "0"; // fallback if not in Condor
-    }
-    TString outputFileName = Form("%sparton_v2_output_%s.root", outputDir, processId.Data());
+    // Create output file
     TFile* outFile = TFile::Open(outputFileName, "RECREATE");
     
     // Write histograms

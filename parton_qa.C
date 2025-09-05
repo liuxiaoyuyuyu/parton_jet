@@ -17,7 +17,7 @@
 using namespace std;
 
 void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/batch2/pp_parton_cascade_19607.root", 
-               const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/") {
+               const char* outputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/parton_qa_output.root") {
     
     // Check if input is a file list or single file
     TString inputStr(inputFileName);
@@ -265,12 +265,7 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
         inFile->Close();
     }
     
-    // Create output file with Condor process ID
-    TString processId = gSystem->Getenv("CONDOR_PROCESS_ID");
-    if (processId.IsNull()) {
-        processId = "0"; // fallback if not in Condor
-    }
-    TString outputFileName = Form("%sparton_qa_output_%s.root", outputDir, processId.Data());
+    // Create output file
     TFile* outFile = new TFile(outputFileName, "RECREATE");
     
     // Write histograms
