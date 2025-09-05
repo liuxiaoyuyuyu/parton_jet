@@ -19,6 +19,7 @@ def create_condor_jobs_batch(list_dir, analysis_type="qa", output_sub_file=None)
     
     # Transfer all necessary files for both analysis types
     transfer_files = "parton_qa.C, parton_v2.C, coordinateTools.h, binning.h"
+    executable = "exec.sh"
     
     if output_sub_file is None:
         output_sub_file = f"condor_{analysis_type}.sub"
