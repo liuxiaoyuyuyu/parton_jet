@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <TMath.h>
 
@@ -18,75 +19,52 @@ using namespace std;
 void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/sample/batch2/pp_parton_cascade_19607.root", 
                const char* outputDir = "/eos/cms/store/group/phys_heavyions/xiaoyul/wenbin/anaOutput/qa/") {
     
-    // Open input file
-    TFile* inFile = TFile::Open(inputFileName, "READ");
-    if (!inFile || inFile->IsZombie()) {
-        cout << "Error: Cannot open input file " << inputFileName << endl;
-        return;
+    // Check if input is a file list or single file
+    TString inputStr(inputFileName);
+    vector<string> inputFiles;
+    
+    if (inputStr.EndsWith(".root")) {
+        // Single file
+        inputFiles.push_back(string(inputFileName));
+    } else {
+        // Check if it's a file list by examining content
+        ifstream fileList(inputFileName);
+        if (!fileList.is_open()) {
+            cout << "Error: Cannot open file " << inputFileName << endl;
+            return;
+        }
+        
+        string line;
+        bool isFileList = false;
+        while (getline(fileList, line)) {
+            if (!line.empty() && line[0] != '#') { // Skip empty lines and comments
+                if (line.find(".root") != string::npos) {
+                    isFileList = true;
+                    inputFiles.push_back(line);
+                }
+            }
+        }
+        fileList.close();
+        
+        if (!isFileList) {
+            cout << "Error: File " << inputFileName << " doesn't appear to be a .root file or a file list" << endl;
+            return;
+        }
+        
+        cout << "Found " << inputFiles.size() << " input files in list: " << inputFileName << endl;
+        
+        if (inputFiles.empty()) {
+            cout << "Error: No input files found in list" << endl;
+            return;
+        }
     }
     
-    // Get the tree
-    TTree* inTree = (TTree*)inFile->Get("trackTree");
-    if (!inTree) {
-        cout << "Error: Cannot find trackTree in input file" << endl;
-        return;
-    }
-    
-    // Set up TTreeReader
-    TTreeReader reader(inTree);
-    
-    // Set up TTreeReaderArrays for all branches
-    TTreeReaderArray<int> b_par_pdgid(reader, "par_pdgid");
-    TTreeReaderArray<float> b_par_px(reader, "par_px");
-    TTreeReaderArray<float> b_par_py(reader, "par_py");
-    TTreeReaderArray<float> b_par_pz(reader, "par_pz");
-    TTreeReaderArray<float> b_par_e(reader, "par_e");
-    TTreeReaderArray<float> b_par_x(reader, "par_x");
-    TTreeReaderArray<float> b_par_y(reader, "par_y");
-    TTreeReaderArray<float> b_par_z(reader, "par_z");
-    TTreeReaderArray<float> b_par_t(reader, "par_t");
-    TTreeReaderArray<int> b_par_color1(reader, "par_color1");
-    TTreeReaderArray<int> b_par_color2(reader, "par_color2");
-    
-    TTreeReaderArray<int> b_par_pdgid_after_zpc(reader, "par_pdgid_after_zpc");
-    TTreeReaderArray<float> b_par_px_after_zpc(reader, "par_px_after_zpc");
-    TTreeReaderArray<float> b_par_py_after_zpc(reader, "par_py_after_zpc");
-    TTreeReaderArray<float> b_par_pz_after_zpc(reader, "par_pz_after_zpc");
-    TTreeReaderArray<float> b_par_e_after_zpc(reader, "par_e_after_zpc");
-    TTreeReaderArray<float> b_par_x_after_zpc(reader, "par_x_after_zpc");
-    TTreeReaderArray<float> b_par_y_after_zpc(reader, "par_y_after_zpc");
-    TTreeReaderArray<float> b_par_z_after_zpc(reader, "par_z_after_zpc");
-    TTreeReaderArray<float> b_par_t_after_zpc(reader, "par_t_after_zpc");
-    TTreeReaderArray<int> b_par_color1_after_zpc(reader, "par_color1_after_zpc");
-    TTreeReaderArray<int> b_par_color2_after_zpc(reader, "par_color2_after_zpc");
-    
-    TTreeReaderValue<int> b_total_collisions(reader, "total_collisions");
-    
-    TTreeReaderArray<float> b_px(reader, "px");
-    TTreeReaderArray<float> b_py(reader, "py");
-    TTreeReaderArray<float> b_pz(reader, "pz");
-    TTreeReaderArray<float> b_m(reader, "m");
-    TTreeReaderArray<int> b_pid(reader, "pid");
-    TTreeReaderArray<int> b_chg(reader, "chg");
-    
-    TTreeReaderArray<float> b_genJetEta(reader, "genJetEta");
-    TTreeReaderArray<float> b_genJetPt(reader, "genJetPt");
-    TTreeReaderArray<float> b_genJetPhi(reader, "genJetPhi");
-    TTreeReaderArray<int> b_genJetChargedMultiplicity(reader, "genJetChargedMultiplicity");
-    
-    // genDau branches for jet constituents
-    TTreeReaderArray<vector<int> > b_genDau_chg(reader, "genDau_chg");
-    TTreeReaderArray<vector<int> > b_genDau_pid(reader, "genDau_pid");
-    TTreeReaderArray<vector<float> > b_genDau_pt(reader, "genDau_pt");
-    TTreeReaderArray<vector<float> > b_genDau_eta(reader, "genDau_eta");
-    TTreeReaderArray<vector<float> > b_genDau_phi(reader, "genDau_phi");
-    
-    // Create histograms
+    // Create histograms (same as before)
     TH2D* hNchjVsNcollision = new TH2D("hNchjVsNcollision", "Leading Jet Charged Multiplicity vs Total Collisions; Total Collisions; N_{ch}^{jet}", 
-                                       20, 0, 20, 100, 0, 100);//x-axis is total collisions, y-axis is leading jet charged multiplicity
+                                       20, 0, 20, 100, 0, 100);
     
     TH2D* hNparVsNparticles = new TH2D("hNparVsNparticles", "Number of Partons vs Number of Particles; N_{particles}; N_{partons}", 
-                                       600, 0, 600, 200, 0, 200);//x-axis is number of particles, y-axis is number of partons, in an event.
+                                       600, 0, 600, 200, 0, 200);
     
     // genJet distributions
     TH1D* hGenJetPt = new TH1D("hGenJetPt", "GenJet p_{T} Distribution; p_{T} (GeV/c); Counts", 100, 0, 1000);
@@ -119,15 +97,85 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     TH2D* hPzBeforeVsAfter_ncoll = new TH2D("hPzBeforeVsAfter_ncoll", "Parton p_{z} Before vs After ZPC (nonzero collisions); p_{z} Before ZPC (GeV/c); p_{z} After ZPC (GeV/c)", 
                                             50, -50, 50, 50, -50, 50);
     
-    // Event loop using TTreeReader
-    Long64_t nEntries = inTree->GetEntries();
-    cout << "Processing " << nEntries << " events..." << endl;
-    
-    Long64_t ientry = 0;
-    while (reader.Next()) {
-        if (ientry % 1000 == 0) {
-            cout << "Processing event " << ientry << "/" << nEntries << endl;
+    // Process each input file
+    Long64_t totalEvents = 0;
+    for (size_t fileIdx = 0; fileIdx < inputFiles.size(); fileIdx++) {
+        const string& currentInputFile = inputFiles[fileIdx];
+        
+        cout << "Processing file " << (fileIdx + 1) << "/" << inputFiles.size() << ": " << currentInputFile << endl;
+        
+        // Open input file
+        TFile* inFile = TFile::Open(currentInputFile.c_str(), "READ");
+        if (!inFile || inFile->IsZombie()) {
+            cout << "Error: Cannot open input file " << currentInputFile << endl;
+            continue;
         }
+        
+        // Get the tree
+        TTree* inTree = (TTree*)inFile->Get("trackTree");
+        if (!inTree) {
+            cout << "Error: Cannot find trackTree in input file " << currentInputFile << endl;
+            inFile->Close();
+            continue;
+        }
+        
+        // Set up TTreeReader
+        TTreeReader reader(inTree);
+    
+        // Set up TTreeReaderArrays for all branches
+        TTreeReaderArray<int> b_par_pdgid(reader, "par_pdgid");
+        TTreeReaderArray<float> b_par_px(reader, "par_px");
+        TTreeReaderArray<float> b_par_py(reader, "par_py");
+        TTreeReaderArray<float> b_par_pz(reader, "par_pz");
+        TTreeReaderArray<float> b_par_e(reader, "par_e");
+        TTreeReaderArray<float> b_par_x(reader, "par_x");
+        TTreeReaderArray<float> b_par_y(reader, "par_y");
+        TTreeReaderArray<float> b_par_z(reader, "par_z");
+        TTreeReaderArray<float> b_par_t(reader, "par_t");
+        TTreeReaderArray<int> b_par_color1(reader, "par_color1");
+        TTreeReaderArray<int> b_par_color2(reader, "par_color2");
+        
+        TTreeReaderArray<int> b_par_pdgid_after_zpc(reader, "par_pdgid_after_zpc");
+        TTreeReaderArray<float> b_par_px_after_zpc(reader, "par_px_after_zpc");
+        TTreeReaderArray<float> b_par_py_after_zpc(reader, "par_py_after_zpc");
+        TTreeReaderArray<float> b_par_pz_after_zpc(reader, "par_pz_after_zpc");
+        TTreeReaderArray<float> b_par_e_after_zpc(reader, "par_e_after_zpc");
+        TTreeReaderArray<float> b_par_x_after_zpc(reader, "par_x_after_zpc");
+        TTreeReaderArray<float> b_par_y_after_zpc(reader, "par_y_after_zpc");
+        TTreeReaderArray<float> b_par_z_after_zpc(reader, "par_z_after_zpc");
+        TTreeReaderArray<float> b_par_t_after_zpc(reader, "par_t_after_zpc");
+        TTreeReaderArray<int> b_par_color1_after_zpc(reader, "par_color1_after_zpc");
+        TTreeReaderArray<int> b_par_color2_after_zpc(reader, "par_color2_after_zpc");
+        
+        TTreeReaderValue<int> b_total_collisions(reader, "total_collisions");
+        
+        TTreeReaderArray<float> b_px(reader, "px");
+        TTreeReaderArray<float> b_py(reader, "py");
+        TTreeReaderArray<float> b_pz(reader, "pz");
+        TTreeReaderArray<float> b_m(reader, "m");
+        TTreeReaderArray<int> b_pid(reader, "pid");
+        TTreeReaderArray<int> b_chg(reader, "chg");
+        
+        TTreeReaderArray<float> b_genJetEta(reader, "genJetEta");
+        TTreeReaderArray<float> b_genJetPt(reader, "genJetPt");
+        TTreeReaderArray<float> b_genJetPhi(reader, "genJetPhi");
+        TTreeReaderArray<int> b_genJetChargedMultiplicity(reader, "genJetChargedMultiplicity");
+        
+        // genDau branches for jet constituents
+        TTreeReaderArray<vector<int> > b_genDau_chg(reader, "genDau_chg");
+        TTreeReaderArray<vector<int> > b_genDau_pid(reader, "genDau_pid");
+        TTreeReaderArray<vector<float> > b_genDau_pt(reader, "genDau_pt");
+        TTreeReaderArray<vector<float> > b_genDau_eta(reader, "genDau_eta");
+        TTreeReaderArray<vector<float> > b_genDau_phi(reader, "genDau_phi");
+    
+        // Event loop using TTreeReader
+        Long64_t nEntries = inTree->GetEntries();
+        Long64_t ientry = 0;
+        
+        while (reader.Next()) {
+            if (ientry % 1000 == 0) {
+                cout << "  Processing event " << ientry << "/" << nEntries << " in file " << (fileIdx + 1) << endl;
+            }
         
         // Check if we have jets
         if (b_genJetEta.GetSize() == 0) {
@@ -210,14 +258,29 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
             }
         }
         
-        ientry++;
+            ientry++;
+            totalEvents++;
+        }
+        
+        inFile->Close();
     }
     
-    // Create output file based on input filename (same as parton_v2.C)
-    TString baseFileName = TString(inputFileName);
-    baseFileName.ReplaceAll(".root", "");
-    baseFileName.ReplaceAll("/", "_");
-    baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_xiaoyul_wenbin_sample_", "");
+    // Create output file based on input filename
+    TString baseFileName;
+    if (inputStr.EndsWith(".root")) {
+        // For single files, use the original logic
+        baseFileName = TString(inputFileName);
+        baseFileName.ReplaceAll(".root", "");
+        baseFileName.ReplaceAll("/", "_");
+        baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_xiaoyul_wenbin_sample_", "");
+    } else {
+        // For file lists, use the list name (remove extension if any)
+        baseFileName = TString(inputFileName);
+        baseFileName = baseFileName(baseFileName.Last('/') + 1);
+        // Remove common extensions
+        baseFileName.ReplaceAll(".txt", "");
+        baseFileName.ReplaceAll(".list", "");
+    }
     
     TString outputFileName = Form("%sparton_qa_output_%s.root", outputDir, baseFileName.Data());
     TFile* outFile = new TFile(outputFileName, "RECREATE");
@@ -249,7 +312,7 @@ void parton_qa(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     hPzBeforeVsAfter_ncoll->Write();
     
     outFile->Close();
-    inFile->Close();
     
-    cout << "QA analysis completed. Output saved to: " << outputFileName << endl;
+    cout << "QA analysis completed. Processed " << totalEvents << " total events." << endl;
+    cout << "Output saved to: " << outputFileName << endl;
 }

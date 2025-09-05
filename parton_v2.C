@@ -1,6 +1,7 @@
 #include <vector>
 #include <unordered_map>
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <TMath.h>
 
@@ -111,55 +112,55 @@ struct Jet {
 
 // Match Partons to Jets, match parton to the first jet that is within 0.8 of the parton's eta and phi.
 void matchPartonsToJets(vector<Parton>& partons, const vector<Jet>& jets) {
-    for (auto& p : partons) {
-        for (int j = 0; j < (int)jets.size(); ++j) {
-            double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
-            double dEta = p.eta - jets[j].Eta;
-            double dR   = sqrt(dEta * dEta + dphi * dphi);
-            if (dR < 0.8) {
-                p.jetID = j;
-                break;
-            }
-        }
-    }
+	for (auto& p : partons) {
+		for (int j = 0; j < (int)jets.size(); ++j) {
+			double dphi = TVector2::Phi_mpi_pi(p.phi - jets[j].Phi);
+			double dEta = p.eta - jets[j].Eta;
+			double dR   = sqrt(dEta * dEta + dphi * dphi);
+			if (dR < 0.8) {
+				p.jetID = j;
+				break;
+			}
+		}
+	}
 }
 
 // Coordinate Transformation from Lab to Jet Frame
 void transformToJetFrame(vector<Parton>& partons, const vector<Jet>& jets) {
-    for (auto& p : partons) {
-        if (p.jetID < 0) continue;
-        
-        TVector3 jv;
+	for (auto& p : partons) {
+		if (p.jetID < 0) continue;
+
+		TVector3 jv;
         jv.SetPtEtaPhi(jets[p.jetID].Pt, jets[p.jetID].Eta, jets[p.jetID].Phi);
-        
-        // rotate momentum into the jet frame
-        TVector3 mom(p.px, p.py, p.pz);
+
+		// rotate momentum into the jet frame
+		TVector3 mom(p.px, p.py, p.pz);
         //the naming is a bit confusing, ptJ_m is the momentum of the parton in the jet frame.
-        double ptJ_m = ptWRTJet(jv, mom);
-        double thJ_m = thetaWRTJet(jv, mom);
-        double phJ_m = phiWRTJet(jv, mom);
-        
-        p.jet_par_px = ptJ_m * cos(phJ_m);
-        p.jet_par_py = ptJ_m * sin(phJ_m);
-        p.jet_par_pz = ptJ_m / tan(thJ_m);
-        
+		double ptJ_m = ptWRTJet(jv, mom);
+		double thJ_m = thetaWRTJet(jv, mom);
+		double phJ_m = phiWRTJet(jv, mom);
+
+		p.jet_par_px = ptJ_m * cos(phJ_m);
+		p.jet_par_py = ptJ_m * sin(phJ_m);
+		p.jet_par_pz = ptJ_m / tan(thJ_m);
+
         // Use small tolerance for double comparison
         const double tolerance = 1e-10;
         if ((fabs(p.x) < tolerance) && (fabs(p.y) < tolerance) && (fabs(p.z) < tolerance)) {
-            p.jet_par_x = 0;
-            p.jet_par_y = 0;
-            p.jet_par_z = 0;
-            continue;
-        }
-        
-        TVector3 pos(p.x, p.y, p.z);
-        double ptJ = ptWRTJet(jv, pos);
-        double thJ = thetaWRTJet(jv, pos);
-        double phJ = phiWRTJet(jv, pos);
-        
-        p.jet_par_x = ptJ * cos(phJ);
-        p.jet_par_y = ptJ * sin(phJ);
-        p.jet_par_z = ptJ / tan(thJ);
+			p.jet_par_x = 0;
+			p.jet_par_y = 0;
+			p.jet_par_z = 0;
+			continue;
+		}
+
+		TVector3 pos(p.x, p.y, p.z);
+		double ptJ = ptWRTJet(jv, pos);
+		double thJ = thetaWRTJet(jv, pos);
+		double phJ = phiWRTJet(jv, pos);
+
+		p.jet_par_x = ptJ * cos(phJ);
+		p.jet_par_y = ptJ * sin(phJ);
+		p.jet_par_z = ptJ / tan(thJ);
     }
 }
 
@@ -167,7 +168,7 @@ void transformToJetFrame(vector<Parton>& partons, const vector<Jet>& jets) {
 void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::vector<Parton>& partons, const vector<Jet>& jets) {
     for (const auto& [jetID, idxs] : partonsByJet) {
         if (idxs.size() < 2) continue;
-        
+
         // Use jet charged multiplicity (not number of partons)
         int jetChargedMult = jets[jetID].genJetChargedMultiplicity;
         int npartons = idxs.size();
@@ -234,7 +235,7 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 // Count partons in this eta_s bin whose formation time is smaller than tauTarget
                 int nPartonsInEtaBin = 0;
                 for (int idx : etaPartons) {
-                    const auto& P = partons[idx];
+                const auto& P = partons[idx];
                     if (P.tau < tauTarget) nPartonsInEtaBin++;
                 }
                 
@@ -259,13 +260,13 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                 }
                 
                 if (sumE < 1e-10) continue; // Use small tolerance instead of exact zero comparison
-                
-                double xm = sumx / sumE;
-                double ym = sumy / sumE;
-                
+
+        double xm = sumx / sumE;
+        double ym = sumy / sumE;
+
                 // Compute eccentricity in the same loop as centroid calculation
                 for (int idx : etaPartons) {
-                    const auto& P = partons[idx];
+            const auto& P = partons[idx];
                     if (P.tau >= tauTarget) continue; // Skip partons not yet formed
                     
                     // Use lab time for free streaming
@@ -275,28 +276,28 @@ void fillBinnedObservables(std::map<int, std::vector<int>>& partonsByJet, std::v
                     
                     double dx = x_jetzt - xm;
                     double dy = y_jetzt - ym;
-                    double r2 = dx * dx + dy * dy;
-                    double phi = atan2(dy, dx);
-                    double w = P.e * r2;
-                    Re += w * cos(2 * phi);
-                    Im += w * sin(2 * phi);
-                    Wtot += w;
-                }
-                
+            double r2 = dx * dx + dy * dy;
+            double phi = atan2(dy, dx);
+            double w = P.e * r2;
+            Re += w * cos(2 * phi);
+            Im += w * sin(2 * phi);
+            Wtot += w;
+        }
+
                 if (Wtot < 1e-10) continue; // Use small tolerance instead of exact zero comparison
-                
+
                 double ecc = sqrt(Re * Re + Im * Im) / Wtot;
-                double psi2 = 0.5 * atan2(Im, Re);
+        double psi2 = 0.5 * atan2(Im, Re);
                 hEccVsTau[multBin][etaBin]->Fill(tauCenter, ecc); 
                 
                 // Calculate v2 by averaging over partons in this jet first, then average over jets
                 double sumv2 = 0;
                 int nPartonsForv2 = 0;
                 for (int idx : etaPartons) {
-                    const auto& P = partons[idx];
+            const auto& P = partons[idx];
                     if (P.tau >= tauTarget) continue; // Skip partons not yet formed
                     
-                    double phi_mom = atan2(P.jet_par_py, P.jet_par_px);
+            double phi_mom = atan2(P.jet_par_py, P.jet_par_px);
                     double v2 = cos(2 * (phi_mom - psi2));
                     sumv2 += v2;
                     nPartonsForv2++;
@@ -345,152 +346,214 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     // Initialize histograms
     initializeHistograms();
     
-    // Open input file
-    TFile* inFile = TFile::Open(inputFileName, "READ");
-    if (!inFile || inFile->IsZombie()) {
-        cout << "Error: Cannot open file " << inputFileName << endl;
-        return;
+    // Check if input is a file list or single file
+    TString inputStr(inputFileName);
+    vector<string> inputFiles;
+    
+    if (inputStr.EndsWith(".root")) {
+        // Single file
+        inputFiles.push_back(string(inputFileName));
+    } else {
+        // Check if it's a file list by examining content
+        ifstream fileList(inputFileName);
+        if (!fileList.is_open()) {
+            cout << "Error: Cannot open file " << inputFileName << endl;
+            return;
+        }
+        
+        string line;
+        bool isFileList = false;
+        while (getline(fileList, line)) {
+            if (!line.empty() && line[0] != '#') { // Skip empty lines and comments
+                if (line.find(".root") != string::npos) {
+                    isFileList = true;
+                    inputFiles.push_back(line);
+                }
+            }
+        }
+        fileList.close();
+        
+        if (!isFileList) {
+            cout << "Error: File " << inputFileName << " doesn't appear to be a .root file or a file list" << endl;
+            return;
+        }
+        
+        cout << "Found " << inputFiles.size() << " input files in list: " << inputFileName << endl;
+        
+        if (inputFiles.empty()) {
+            cout << "Error: No input files found in list" << endl;
+            return;
+        }
     }
     
-    TTree *inTree = (TTree*)inFile->Get("trackTree");
-    if (!inTree) {
-        cout << "Error: Cannot find TTree 'trackTree' in file " << inputFileName << endl;
-        inFile->Close();
-        return;
-    }
-    
+    // Process each input file
+    Long64_t totalEvents = 0;
+    for (size_t fileIdx = 0; fileIdx < inputFiles.size(); fileIdx++) {
+        const string& currentInputFile = inputFiles[fileIdx];
+        
+        cout << "Processing file " << (fileIdx + 1) << "/" << inputFiles.size() << ": " << currentInputFile << endl;
+        
+        // Open input file
+        TFile* inFile = TFile::Open(currentInputFile.c_str(), "READ");
+        if (!inFile || inFile->IsZombie()) {
+            cout << "Error: Cannot open file " << currentInputFile << endl;
+            continue;
+        }
 
-    
-    int nentries = inTree->GetEntries();
-    
+	TTree *inTree = (TTree*)inFile->Get("trackTree");
+        if (!inTree) {
+            cout << "Error: Cannot find TTree 'trackTree' in file " << currentInputFile << endl;
+            inFile->Close();
+            continue;
+        }
+
+	int nentries = inTree->GetEntries();
+
+	//----------------------------------------------------------------------
+        // Set up branch addresses (like evolution_jet_bins.cc)
     //----------------------------------------------------------------------
-    // Set up branch addresses (like evolution_jet_bins.cc)
-    //----------------------------------------------------------------------
-    
-    // Parton branches
-    vector<int>*    b_par_pdgid = nullptr;
-    vector<double>* b_par_px    = nullptr;
-    vector<double>* b_par_py    = nullptr;
-    vector<double>* b_par_pz    = nullptr;
-    vector<double>* b_par_e     = nullptr;
-    vector<double>* b_par_x     = nullptr;
-    vector<double>* b_par_y     = nullptr;
-    vector<double>* b_par_z     = nullptr;
-    vector<double>* b_par_t     = nullptr;
 
-    inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
-    inTree->SetBranchAddress("par_px",    &b_par_px);
-    inTree->SetBranchAddress("par_py",    &b_par_py);
-    inTree->SetBranchAddress("par_pz",    &b_par_pz);
-    inTree->SetBranchAddress("par_e",     &b_par_e);
-    inTree->SetBranchAddress("par_x",     &b_par_x);
-    inTree->SetBranchAddress("par_y",     &b_par_y);
-    inTree->SetBranchAddress("par_z",     &b_par_z);
-    inTree->SetBranchAddress("par_t",     &b_par_t);
+        // Parton branches
+        vector<int>*    b_par_pdgid = nullptr;
+        vector<double>* b_par_px    = nullptr;
+        vector<double>* b_par_py    = nullptr;
+        vector<double>* b_par_pz    = nullptr;
+        vector<double>* b_par_e     = nullptr;
+        vector<double>* b_par_x     = nullptr;
+        vector<double>* b_par_y     = nullptr;
+        vector<double>* b_par_z     = nullptr;
+        vector<double>* b_par_t     = nullptr;
 
-    // Jet branches
-    vector<double>* b_genJetPt  = nullptr;
-    vector<double>* b_genJetEta = nullptr;
-    vector<double>* b_genJetPhi = nullptr;
-    vector<int>* b_genJetChargedMult = nullptr;
+        inTree->SetBranchAddress("par_pdgid", &b_par_pdgid);
+        inTree->SetBranchAddress("par_px",    &b_par_px);
+        inTree->SetBranchAddress("par_py",    &b_par_py);
+        inTree->SetBranchAddress("par_pz",    &b_par_pz);
+        inTree->SetBranchAddress("par_e",     &b_par_e);
+        inTree->SetBranchAddress("par_x",     &b_par_x);
+        inTree->SetBranchAddress("par_y",     &b_par_y);
+        inTree->SetBranchAddress("par_z",     &b_par_z);
+        inTree->SetBranchAddress("par_t",     &b_par_t);
 
-    inTree->SetBranchAddress("genJetPt",  &b_genJetPt);
-    inTree->SetBranchAddress("genJetEta", &b_genJetEta);
-    inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
-    inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
-    
-    // Prepare containers
-    vector<Parton> partons;
-    vector<Jet> jets;
+        // Jet branches
+        vector<double>* b_genJetPt  = nullptr;
+        vector<double>* b_genJetEta = nullptr;
+        vector<double>* b_genJetPhi = nullptr;
+        vector<int>* b_genJetChargedMult = nullptr;
+
+        inTree->SetBranchAddress("genJetPt",  &b_genJetPt);
+        inTree->SetBranchAddress("genJetEta", &b_genJetEta);
+        inTree->SetBranchAddress("genJetPhi", &b_genJetPhi);
+        inTree->SetBranchAddress("genJetChargedMultiplicity", &b_genJetChargedMult);
+        
+        // Prepare containers
+        vector<Parton> partons;
+        vector<Jet> jets;
     std::map<int, vector<int>> partonsByJet;
-    
-    // Event loop
-    for (int ientry = 0; ientry < nentries; ientry++) {
-    
-        // Get the current entry (like evolution_jet_bins.cc)
-        inTree->GetEntry(ientry);
-        
-        // Read jets (like evolution_jet_bins.cc)
-        jets.clear();
-        for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
-            Jet jet;
-            jet.Pt = b_genJetPt->at(j);
-            jet.Eta = b_genJetEta->at(j);
-            jet.Phi = b_genJetPhi->at(j);
-            jet.genJetChargedMultiplicity = b_genJetChargedMult->at(j);
-            jets.push_back(jet);
-        }
-        
-        // Read partons (like evolution_jet_bins.cc)
-        partons.clear();
-        for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
-            Parton p;
-            p.pdgid = b_par_pdgid->at(j);
-            p.px    = b_par_px->at(j);
-            p.py    = b_par_py->at(j);
-            p.pz    = b_par_pz->at(j);
-            p.e     = b_par_e->at(j);
-            p.x     = b_par_x->at(j);
-            p.y     = b_par_y->at(j);
-            p.z     = b_par_z->at(j);
-            p.t     = b_par_t->at(j);
-            
-            // Calculate parton kinematics
-            p.pt   = sqrt(p.px * p.px + p.py * p.py);
-            p.phi  = atan2(p.py, p.px);
-            double theta = atan2(p.pt, p.pz);
-            p.eta  = -log(tan(theta / 2.0));
-            
-            p.jetID       = -1;
-            p.jet_par_x   = 0.0;
-            p.jet_par_y   = 0.0;
-            p.jet_par_z   = 0.0;
-            p.jet_par_px  = 0.0;
-            p.jet_par_py  = 0.0;
-            p.jet_par_pz  = 0.0;
-            
-            partons.push_back(p);
-        }
-        
-        matchPartonsToJets(partons, jets);
-        transformToJetFrame(partons, jets);
-        
-        // Calculate proper time and eta_s for each parton
-        for (auto& p : partons) {
-            double z2 = p.jet_par_z * p.jet_par_z;
-            p.tau = (p.t * p.t > z2) ? sqrt(p.t * p.t - z2) : 0.0;
-            
-            // Spacetime rapidity (same as evolution_jet_bins.cc)
-            if (p.t > p.jet_par_z) {
-                p.eta_s = 0.5 * log((p.t + p.jet_par_z) / (p.t - p.jet_par_z));
-            } else {
-                double vz = p.jet_par_pz / p.e;
-                p.eta_s = 0.5 * log((1 + vz) / (1 - vz));
-            }
-        }
-        
 
-        // Group partons by jet
-        partonsByJet.clear();
-        for (int ip = 0; ip < partons.size(); ++ip) {
-            auto& p = partons[ip];
-            if (p.jetID >= 0) {
-                partonsByJet[p.jetID].push_back(ip);
+        // Event loop
+        for (int ientry = 0; ientry < nentries; ientry++) {
+    
+            // Get the current entry (like evolution_jet_bins.cc)
+            inTree->GetEntry(ientry);
+            
+            if (ientry % 1000 == 0) {
+                cout << "  Processing event " << ientry << "/" << nentries << " in file " << (fileIdx + 1) << endl;
             }
-        }
-        // Fill binned observables
-        fillBinnedObservables(partonsByJet, partons, jets);
-        
+            
+            // Read jets (like evolution_jet_bins.cc)
+            jets.clear();
+            for (int j = 0; j < (int)b_genJetPt->size(); ++j) {
+                Jet jet;
+                jet.Pt = b_genJetPt->at(j);
+                jet.Eta = b_genJetEta->at(j);
+                jet.Phi = b_genJetPhi->at(j);
+                jet.genJetChargedMultiplicity = b_genJetChargedMult->at(j);
+                jets.push_back(jet);
+            }
+            
+            // Read partons (like evolution_jet_bins.cc)
+            partons.clear();
+            for (int j = 0; j < (int)b_par_pdgid->size(); ++j) {
+                Parton p;
+                p.pdgid = b_par_pdgid->at(j);
+                p.px    = b_par_px->at(j);
+                p.py    = b_par_py->at(j);
+                p.pz    = b_par_pz->at(j);
+                p.e     = b_par_e->at(j);
+                p.x     = b_par_x->at(j);
+                p.y     = b_par_y->at(j);
+                p.z     = b_par_z->at(j);
+                p.t     = b_par_t->at(j);
+                
+                // Calculate parton kinematics
+                p.pt   = sqrt(p.px * p.px + p.py * p.py);
+                p.phi  = atan2(p.py, p.px);
+                double theta = atan2(p.pt, p.pz);
+                p.eta  = -log(tan(theta / 2.0));
+                
+                p.jetID       = -1;
+                p.jet_par_x   = 0.0;
+                p.jet_par_y   = 0.0;
+                p.jet_par_z   = 0.0;
+                p.jet_par_px  = 0.0;
+                p.jet_par_py  = 0.0;
+                p.jet_par_pz  = 0.0;
+                
+                partons.push_back(p);
+            }
 
+		matchPartonsToJets(partons, jets);
+		transformToJetFrame(partons, jets);
+
+            // Calculate proper time and eta_s for each parton
+		for (auto& p : partons) {
+    		double z2 = p.jet_par_z * p.jet_par_z;
+    		p.tau = (p.t * p.t > z2) ? sqrt(p.t * p.t - z2) : 0.0;
+                
+                // Spacetime rapidity (same as evolution_jet_bins.cc)
+                if (p.t > p.jet_par_z) {
+                    p.eta_s = 0.5 * log((p.t + p.jet_par_z) / (p.t - p.jet_par_z));
+                } else {
+                    double vz = p.jet_par_pz / p.e;
+                    p.eta_s = 0.5 * log((1 + vz) / (1 - vz));
+                }
+            }
+            
+            // Group partons by jet
+            partonsByJet.clear();
+            for (int ip = 0; ip < partons.size(); ++ip) {
+                auto& p = partons[ip];
+                if (p.jetID >= 0) {
+                    partonsByJet[p.jetID].push_back(ip);
+                }
+            }
+            // Fill binned observables
+            fillBinnedObservables(partonsByJet, partons, jets);
+            
+            totalEvents++;
+        }
+        
+        inFile->Close();
     }
     
 
     
     // Create output file based on input filename
-    TString baseFileName = TString(inputFileName);
-    baseFileName.ReplaceAll(".root", "");
-    baseFileName.ReplaceAll("/", "_");
-    baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_huangxi_PC_", "");
+    TString baseFileName;
+    if (inputStr.EndsWith(".root")) {
+        // For single files, use the original logic
+        baseFileName = TString(inputFileName);
+        baseFileName.ReplaceAll(".root", "");
+        baseFileName.ReplaceAll("/", "_");
+        baseFileName.ReplaceAll("eos_cms_store_group_phys_heavyions_huangxi_PC_", "");
+    } else {
+        // For file lists, use the list name (remove extension if any)
+        baseFileName = TString(inputFileName);
+        baseFileName = baseFileName(baseFileName.Last('/') + 1);
+        // Remove common extensions
+        baseFileName.ReplaceAll(".txt", "");
+        baseFileName.ReplaceAll(".list", "");
+    }
     
     TString outputFileName = Form("%sparton_v2_output_%s.root", outputDir, baseFileName.Data());
     TFile* outFile = TFile::Open(outputFileName, "RECREATE");
@@ -519,5 +582,7 @@ void parton_v2(const char* inputFileName = "/eos/cms/store/group/phys_heavyions/
     }
     
     outFile->Close();
-    inFile->Close();
+    
+    cout << "v2 analysis completed. Processed " << totalEvents << " total events." << endl;
+    cout << "Output saved to: " << outputFileName << endl;
 }
